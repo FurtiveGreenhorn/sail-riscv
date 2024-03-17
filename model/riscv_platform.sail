@@ -780,6 +780,7 @@ function htif_store(paddr, width, data) = {
              htif_exit_code = (sail_zero_extend(cmd[payload], 64) >> 1)
              let a = plat_htif_fromhost();
              reset_htif()
+        }
     //     }
     //     else ()
     //   },
