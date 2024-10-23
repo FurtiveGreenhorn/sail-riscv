@@ -90,6 +90,10 @@ instantiation sail_mem_write with
    */
 type max_mem_access : Int = 4096
 
+/* cache api test */
+val show_addr_and_data = impure {c: "show_addr_and_data"} : forall 'n, 0 < 'n <= max_mem_access. (xlenbits, bits(8 * 'n)) -> unit 
+/* cache api test */
+
 val write_ram : forall 'n, 0 < 'n <= max_mem_access. (write_kind, xlenbits, int('n), bits(8 * 'n), mem_meta) -> bool
 
 function write_ram(wk, addr, width, data, meta) = {
@@ -109,6 +113,11 @@ function write_ram(wk, addr, width, data, meta) = {
     value = Some(data),
     tag = None(),
   };
+
+  /* cache api test */
+  show_addr_and_data(addr, data);
+  /* cache api test */
+
   /* Write out metadata only if the value write succeeds.
    * It is assumed for now that this write always succeeds;
    * there is currently no return value.

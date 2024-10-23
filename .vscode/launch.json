@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug SAIL-RISCV Simulator",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/ovo/sail-riscv/c_emulator/riscv_sim_RV64",
+            "args": [
+                "/home/ovo/sail-riscv/test/riscv-tests/rv64ui-p-sh.elf"
+            ],
+            "stopAtEntry": false,
+            "cwd": "/home/ovo/sail-riscv",  // 设置为你的工作目录
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "text": "-enable-pretty-printing",
+                    "description": "Enable pretty printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerPath": "/usr/bin/gdb",  // 确保这个路径正确
+            "miDebuggerArgs": "",
+            "sourceFileMap": {
+                "/build/src": "${workspaceFolder}/src"  // 如果需要映射源代码路径
+            }
+        }
+    ]
+}
