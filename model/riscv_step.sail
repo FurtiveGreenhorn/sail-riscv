@@ -44,24 +44,6 @@ function step(step_no : int) -> bool = {
             handle_mem_exception(addr, e);
             (RETIRE_FAIL, false)
           },
-          /* non-error cases: */
-          F_RVC(h) => {
-            sail_instr_announce(h);
-            instbits = zero_extend(h);
-            let ast = ext_decode_compressed(h);
-            if   get_config_print_instr()
-            then {
-              print_instr("[" ^ dec_str(step_no) ^ "] [" ^ to_str(cur_privilege) ^ "]: " ^ BitStr(PC) ^ " (" ^ BitStr(h) ^ ") " ^ to_str(ast));
-            };
-            /* check for RVC once here instead of every RVC execute clause. */
-            if extensionEnabled(Ext_Zca) then {
-              nextPC = PC + 2;
-              (execute(ast), true)
-            } else {
-              handle_illegal();
-              (RETIRE_FAIL, true)
-            }
-          },
           F_Base(w) => {
             sail_instr_announce(w);
             instbits = zero_extend(w);
