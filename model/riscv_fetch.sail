@@ -31,17 +31,21 @@ function fetch() -> FetchResult =
           match mem_read(Execute(), ppclo, 2, false, false, false) {
             MemException(e) => F_Error(e, PC),
             MemValue(ilo)   => {
-              /* fetch PC check for the next instruction granule */
-              let PC_hi = PC + 2;
-              match ext_fetch_check_pc(PC, PC_hi) {
-                Ext_FetchAddr_Error(e)      => F_Ext_Error(e),
-                Ext_FetchAddr_OK(use_pc_hi) => {
-                  match translateAddr(use_pc_hi, Execute()) {
-                    TR_Failure(e, _)     => F_Error(e, PC_hi),
-                    TR_Address(ppchi, _) => {
-                      match mem_read(Execute(), ppchi, 2, false, false, false) {
-                        MemException(e) => F_Error(e, PC_hi),
-                        MemValue(ihi)   => F_Base(append(ihi, ilo))
+              if   isRVC(ilo)
+              then F_RVC(ilo)
+              else {
+                /* fetch PC check for the next instruction granule */
+                let PC_hi = PC + 2;
+                match ext_fetch_check_pc(PC, PC_hi) {
+                  Ext_FetchAddr_Error(e)      => F_Ext_Error(e),
+                  Ext_FetchAddr_OK(use_pc_hi) => {
+                    match translateAddr(use_pc_hi, Execute()) {
+                      TR_Failure(e, _)     => F_Error(e, PC_hi),
+                      TR_Address(ppchi, _) => {
+                        match mem_read(Execute(), ppchi, 2, false, false, false) {
+                          MemException(e) => F_Error(e, PC_hi),
+                          MemValue(ihi)   => F_Base(append(ihi, ilo))
+                        }
                       }
                     }
                   }
