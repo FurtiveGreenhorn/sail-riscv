@@ -143,7 +143,7 @@ export LEM_DIR
 C_WARNINGS ?=
 #-Wall -Wextra -Wno-unused-label -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-function
 C_INCS = $(addprefix c_emulator/,riscv_prelude.h riscv_platform_impl.h riscv_platform.h riscv_softfloat.h)
-C_SRCS = $(addprefix c_emulator/,riscv_prelude.c riscv_platform_impl.c riscv_platform.c riscv_softfloat.c riscv_sim.c riscv_test.c)
+C_SRCS = $(addprefix c_emulator/,riscv_prelude.c riscv_platform_impl.c riscv_platform.c riscv_softfloat.c riscv_sim.c)
 
 SOFTFLOAT_DIR    = c_emulator/SoftFloat-3e
 SOFTFLOAT_INCDIR = $(SOFTFLOAT_DIR)/source/include
@@ -225,7 +225,7 @@ c_preserve_fns=-c_preserve _set_Misa_C
 
 generated_definitions/c/riscv_model_$(ARCH).c: $(SAIL_SRCS) model/main.sail Makefile
 	mkdir -p generated_definitions/c
-	$(SAIL) $(SAIL_FLAGS) $(c_preserve_fns) -O -Oconstant_fold -memo_z3 -c -c_include riscv_prelude.h -c_include riscv_platform.h -c_no_main $(SAIL_SRCS) model/main.sail -o $(basename $@)
+	$(SAIL) $(SAIL_FLAGS) $(c_preserve_fns) -O -Oconstant_fold -memo_z3 -c -c_include riscv_prelude.h -c_include riscv_platform.h -c_include Cache/simulator_cache_api.h -c_no_main $(SAIL_SRCS) model/main.sail -o $(basename $@)
 
 generated_definitions/c2/riscv_model_$(ARCH).c: $(SAIL_SRCS) model/main.sail Makefile
 	mkdir -p generated_definitions/c2
@@ -240,9 +240,40 @@ csim: c_emulator/riscv_sim_$(ARCH)
 .PHONY: rvfi
 rvfi: c_emulator/riscv_rvfi_$(ARCH)
 
-c_emulator/riscv_sim_$(ARCH): generated_definitions/c/riscv_model_$(ARCH).c $(C_INCS) $(C_SRCS) $(SOFTFLOAT_LIBS) Makefile
-	$(CC) -g $(C_WARNINGS) $(C_FLAGS) $< $(C_SRCS) $(SAIL_LIB_DIR)/*.c $(C_LIBS) -o $@
+# test cpp <----------------------------------------------------------------------------------------------------------------
+SAIL_OBJS_DIR := $(CURDIR)/c_emulator/build/sail_objs
+$(SAIL_OBJS_DIR):
+	mkdir -p $(SAIL_OBJS_DIR)
 
+# 為 SAIL_LIB_DIR 內的 .c 文件生成 .o 文件
+$(SAIL_OBJS_DIR)/sail_%.o: $(SAIL_LIB_DIR)/%.c | $(SAIL_OBJS_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+	
+# 為 c_emulator 內的 .c 文件生成 .o 文件
+$(SAIL_OBJS_DIR)/emulator_%.o: c_emulator/%.c | $(SAIL_OBJS_DIR)
+	$(CC) $(CFLAGS) -I$(SAIL_LIB_DIR) -Ic_emulator/SoftFloat-3e/source/include -c $< -o $@
+
+# 找出 SAIL_LIB_DIR 和 c_emulator 中所有 .c 文件並生成相應的 .o 文件列表
+SAIL_OBJS := $(patsubst $(SAIL_LIB_DIR)/%.c, $(SAIL_OBJS_DIR)/sail_%.o, $(wildcard $(SAIL_LIB_DIR)/*.c))
+EMULATOR_OBJS := $(patsubst c_emulator/%.c, $(SAIL_OBJS_DIR)/emulator_%.o, $(wildcard c_emulator/*.c))
+
+# Sail Model obj file
+$(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o: generated_definitions/c/riscv_model_$(ARCH).c | $(SAIL_OBJS_DIR)
+	$(CC) -g $(C_FLAGS) -c $< -o $@
+
+# 產生 Cache 的 LIB
+CACHE_DIR = c_emulator/Cache
+Cache_LIBDIR = $(CACHE_DIR)/build
+Cache_LIBS = $(Cache_LIBDIR)/cache.a
+$(Cache_LIBS):
+	$(MAKE) -C $(Cache_LIBDIR)
+
+c_emulator/riscv_sim_$(ARCH): $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o $(Cache_LIBS) $(SAIL_OBJS) $(EMULATOR_OBJS) $(SOFTFLOAT_LIBS)
+	g++ -g $^ $(C_LIBS) -o $@
+
+# c_emulator/riscv_sim_$(ARCH): generated_definitions/c/riscv_model_$(ARCH).c $(C_INCS) $(C_SRCS) $(SOFTFLOAT_LIBS) Makefile
+# 	$(CC) -g $(C_WARNINGS) $(C_FLAGS) $< $(C_SRCS) $(SAIL_LIB_DIR)/*.c $(C_LIBS) -o $@
+# test cpp ---------------------------------------------------------------------------------------------------------------->
 # Note: We have to add -c_preserve since the functions might be optimized out otherwise
 rvfi_preserve_fns=-c_preserve rvfi_set_instr_packet \
   -c_preserve rvfi_get_cmd \
@@ -405,6 +436,7 @@ clean:
 	-rm -rf generated_definitions/lem/* generated_definitions/isabelle/* generated_definitions/hol4/* generated_definitions/coq/*
 	-rm -rf generated_definitions/for-rmem/*
 	-$(MAKE) -C $(SOFTFLOAT_LIBDIR) clean
+	-$(MAKE) -C $(Cache_LIBDIR) clean
 	-rm -f c_emulator/riscv_sim_RV32 c_emulator/riscv_sim_RV64  c_emulator/riscv_rvfi_RV32 c_emulator/riscv_rvfi_RV64
 	-rm -f *.gcno *.gcda
 	-rm -f z3_problems
@@ -413,3 +445,4 @@ clean:
 	-rm -f handwritten_support/mem_metadata.vo handwritten_support/mem_metadata.vos handwritten_support/mem_metadata.vok handwritten_support/mem_metadata.glob handwritten_support/.mem_metadata.aux
 	-rm -f sail_doc/riscv_RV32.json
 	-rm -f sail_doc/riscv_RV64.json
+	-rm -rf c_emulator/build
