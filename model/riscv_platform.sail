@@ -372,6 +372,9 @@ function htif_store(paddr, width, data) = {
         then print_platform("htif-syscall-proxy cmd: " ^ BitStr(cmd[payload]));
         if   cmd[payload][0] == bitone
         then {
+             print_ic_stats();
+             print_dc_stats();
+             print_l2_stats();
              htif_done = true;
              htif_exit_code = (sail_zero_extend(cmd[payload], 64) >> 1)
         }
