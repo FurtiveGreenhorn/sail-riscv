@@ -8,7 +8,7 @@
 
 /* The default implementation of hooks for the step() and main() functions. */
 
-function ext_init() -> unit = ()
+function ext_init() -> unit = cache_init()
 
 function ext_fetch_hook(f : FetchResult) -> FetchResult = f
 
