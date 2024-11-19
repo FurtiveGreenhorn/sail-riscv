@@ -46,7 +46,33 @@ unit cancel_reservation(unit);
 
 void plat_insns_per_tick(sail_int *rop, unit);
 
-unit plat_term_write(mach_bits);
+/* for syscall */
+unit plat_term_write(mach_bits, mach_bits);
+void plat_term_read(sail_string* zret_str, mach_bits file, mach_bits len);
+/* for syscall */
 mach_bits plat_htif_tohost(unit);
+/* for syscall */
+mach_bits plat_htif_fromhost(unit); 
+/* for syscall */
+
+/* for syscall */
+mach_bits bits_of_int(sail_int num);
+mach_bits bits_of_string(sail_string s, sail_int index);
+/* for syscall */
 
 unit memea(mach_bits, sail_int);
+/* for syscall */
+mach_bits plat_term_open(sail_int flag, sail_int mode);
+mach_bits plat_term_close(mach_bits fd);
+mach_bits plat_term_seek(mach_bits fd, mach_bits off, mach_bits dir);
+unit plat_term_gettimeofday(unit u);
+unit plat_term_times(unit u);
+mach_bits plat_term_fstat(mach_bits fd);
+mach_bits plat_term_utime(mach_bits atime, mach_bits mtime);
+
+unit getChar2C(mach_bits);
+/* for syscall */
+
+/* for syscall */
+void get_argv(sail_string* s, sail_int i);
+/* for syscall */

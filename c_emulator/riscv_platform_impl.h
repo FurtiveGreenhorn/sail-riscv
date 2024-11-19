@@ -45,8 +45,50 @@ extern uint64_t rv_clint_base;
 extern uint64_t rv_clint_size;
 
 extern uint64_t rv_htif_tohost;
+/* for syscall */
+extern uint64_t rv_htif_fromhost; 
+/* for syscall */
 extern uint64_t rv_insns_per_tick;
 
 extern FILE *trace_log;
 extern int term_fd;
-void plat_term_write_impl(char c);
+/* for syscall */
+
+extern uint64_t zread_address;
+extern uint64_t zstring_len;
+extern uint64_t ztv_sec;
+extern uint64_t ztv_usec;
+extern uint64_t ztms_utime;
+
+
+extern uint64_t zst_s;
+extern uint64_t zst_blk;
+
+extern uint64_t zst_dev;
+extern uint64_t zst_ino;
+extern uint64_t zst_mode;
+extern uint64_t zst_nlink;
+extern uint64_t zst_uid; 
+extern uint64_t zst_gid; 
+extern uint64_t zst_rdev; 
+extern uint64_t zst_atim_sec; 
+extern uint64_t zst_atim_nsec; 
+extern uint64_t zst_mtim_sec; 
+extern uint64_t zst_mtim_nsec; 
+extern uint64_t zst_ctim_sec; 
+extern uint64_t zst_ctim_nsec; 
+extern uint64_t zst_blocks;
+void plat_term_write_impl(int fd,char c);
+void plat_term_read_impl(char** zret_str,int file, size_t len);
+uint64_t plat_term_open_impl(char* name, int flag, int mode);
+uint64_t plat_term_seek_impl(uint64_t fd, uint64_t off, uint64_t dir);
+void plat_term_gettimeofday_impl();
+void plat_term_times_impl();
+uint64_t plat_term_close_impl(uint64_t fd);
+uint64_t plat_term_fstat_impl(uint64_t fd);
+uint64_t plat_term_utime_impl(char* name, uint64_t atime, uint64_t mtime);
+
+int fd_alloc(int fd);
+void fd_dealloc(int fd);
+int fd_lookup(int fd);
+/* for syscall */

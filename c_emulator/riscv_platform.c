@@ -3,7 +3,7 @@
 #include "riscv_prelude.h"
 #include "riscv_platform_impl.h"
 #include "riscv_sail.h"
-
+#include <string.h>
 #ifdef DEBUG_RESERVATION
 #include <stdio.h>
 #include <inttypes.h>
@@ -188,21 +188,115 @@ unit cancel_reservation(unit u)
   return UNIT;
 }
 
-unit plat_term_write(mach_bits s)
-{
+/* for syscall */
+unit plat_term_write(mach_bits fd, mach_bits s)
+{ 
   char c = s & 0xff;
-  plat_term_write_impl(c);
+  plat_term_write_impl(fd ,c);
   return UNIT;
 }
 
-void plat_insns_per_tick(sail_int *rop, unit u) { }
+void plat_term_read(sail_string* zret_str ,mach_bits file, mach_bits len)
+{ 
+  //fprintf(stderr, "plat_term_read = %d, %d\n", file, len);
+
+  return plat_term_read_impl(zret_str, file, len);
+}
+
+char name_str[256] = {'\0'};
+int name_index = 0;
+unit getChar2C(mach_bits s)
+{
+  char c = s & 0xff;
+  name_str[name_index++] = c;
+  return UNIT;
+}
+
+mach_bits plat_term_open(sail_int flag, sail_int mode)
+{
+  int n = mpz_get_si(flag);
+  int n2 = mpz_get_si(mode);
+
+  int fd;
+  //printf("%s\n", name_str);
+  fd = plat_term_open_impl(name_str, n, n2);
+  
+  //初始化name_str和name_index 
+  memset(name_str, '\0', sizeof(name_str));
+  name_index = 0;
+  return fd; 
+}
+mach_bits plat_term_close(mach_bits fd)
+{
+  return plat_term_close_impl(fd);
+}
+
+mach_bits plat_term_seek(mach_bits fd, mach_bits off, mach_bits dir)
+{
+  return plat_term_seek_impl(fd, off, dir);
+}
+
+unit plat_term_gettimeofday(unit u)
+{
+  plat_term_gettimeofday_impl();
+  return UNIT;
+}
+unit plat_term_times(unit u)
+{
+  plat_term_times_impl();
+  return UNIT;
+}
+
+mach_bits plat_term_fstat(mach_bits fd)
+{
+  return plat_term_fstat_impl(fd);
+}
+
+mach_bits plat_term_utime(mach_bits atime, mach_bits mtime)
+{
+  mach_bits ret;
+
+  ret = plat_term_utime_impl(name_str,atime, mtime);
+  memset(name_str, '\0', sizeof(name_str));
+  name_index = 0;
+  
+  return ret;
+}
+/* for syscall */
+
+void plat_insns_per_tick(sail_int *rop, unit u)
+{ }
 
 mach_bits plat_htif_tohost(unit u)
 {
   return rv_htif_tohost;
 }
+//typedef uint64_t mach_bits; 
+/* for syscall */
+mach_bits plat_htif_fromhost(unit u)
+{
+  //fprintf(stderr, "test fromhost\n");
+
+  return rv_htif_fromhost;
+}
+/* for syscall */
 
 unit memea(mach_bits len, sail_int n)
 {
   return UNIT;
 }
+
+/* for syscall */
+mach_bits bits_of_string(sail_string s, sail_int index) 
+{
+  int index2 = mpz_get_si(index);
+
+  return s[index2];
+}
+
+mach_bits bits_of_int(sail_int num)
+{
+  int num2 = mpz_get_si(num);
+  return num2;
+}
+/* for syscall */

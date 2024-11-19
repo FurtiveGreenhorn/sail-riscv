@@ -58,10 +58,63 @@ val plat_rom_size   = pure {interpreter: "Platform.rom_size", c: "plat_rom_size"
 val plat_clint_base = pure {interpreter: "Platform.clint_base", c: "plat_clint_base", lem: "plat_clint_base"} : unit -> xlenbits
 val plat_clint_size = pure {interpreter: "Platform.clint_size", c: "plat_clint_size", lem: "plat_clint_size"} : unit -> xlenbits
 
+/* for syscall */
+//sys_read
+register string_len : xlenbits
+
+//sys_getmainvars
+register htif_argc : int
+
+
+//sys_gettimeofday
+register tv_sec : xlenbits
+register tv_usec : xlenbits
+
+//sys_times
+//utime = user time, tms = a c structure
+register tms_utime : xlenbits
+
+//sys_fstat
+//這兩個用原本的名稱會出錯
+register st_s : xlenbits
+register st_blk : xlenbits
+//
+register st_dev : bits(16)
+register st_ino : bits(16)
+register st_mode : bits(32)
+register st_nlink : bits(16)
+register st_uid : bits(16)
+register st_gid : bits(16)
+register st_rdev : bits(16)
+register st_atim_sec : xlenbits
+register st_atim_nsec : xlenbits
+register st_mtim_sec : xlenbits
+register st_mtim_nsec : xlenbits
+register st_ctim_sec : xlenbits
+register st_ctim_nsec : xlenbits
+register st_blocks : xlenbits
+val get_argv = pure {c: "get_argv" } : int -> string
+val plat_htif_fromhost = impure {c: "plat_htif_fromhost"} : unit -> xlenbits 
+val bits_of_string = pure {c: "bits_of_string"} : (string, int) -> bits(8) 
+val bits_of_int = pure {c: "bits_of_int"} : (int) -> xlenbits 
+
+function int_of_bits(xs: xlenbits) -> nat = {
+	var acc : nat = 0;
+  let bound = sizeof(xlen) - 1;
+	foreach(i from 0 to bound) {
+		acc = acc * 2;
+		if bit_to_bool(xs[(bound - i)])
+		then acc = acc + 1
+	};
+	acc
+}
+/* for syscall */
+
 /* Location of HTIF ports */
 val plat_htif_tohost = pure {c: "plat_htif_tohost", lem: "plat_htif_tohost"} : unit -> xlenbits
 function plat_htif_tohost () = to_bits(xlen, elf_tohost ())
 // todo: fromhost
+
 
 val phys_mem_segments : unit -> list((xlenbits, xlenbits))
 function phys_mem_segments() =
@@ -116,6 +169,13 @@ function within_htif_writable forall 'n, 0 < 'n <= max_mem_access . (addr : xlen
 
 function within_htif_readable forall 'n, 0 < 'n <= max_mem_access . (addr : xlenbits, width : int('n)) -> bool =
     plat_htif_tohost() == addr | (plat_htif_tohost() + 4 == addr & width == 4)
+/* for syscall */
+function within_htif_fromhost_writable forall 'n, 0 < 'n <= max_mem_access . (addr : xlenbits, width : atom('n)) -> bool =
+    plat_htif_fromhost() == addr | (plat_htif_fromhost() + 4 == addr & width == 4)
+
+function within_htif_fromhost_readable forall 'n, 0 < 'n <= max_mem_access . (addr : xlenbits, width : atom('n)) -> bool =
+    plat_htif_fromhost() == addr | (plat_htif_fromhost() + 4 == addr & width == 4)
+/* for syscall */
 
 /* CLINT (Core Local Interruptor), based on Spike. */
 
@@ -279,8 +339,18 @@ function tick_clock() = {
 
 /* Basic terminal character I/O. */
 
-val plat_term_write = impure {c: "plat_term_write", lem: "plat_term_write"} : bits(8) -> unit
-val plat_term_read  = impure {c: "plat_term_read", lem: "plat_term_read"}  : unit -> bits(8)
+/* for syscall */
+val getChar2C = pure {c: "getChar2C"} : bits(8) -> unit
+val plat_term_write = impure {ocaml: "Platform.term_write", c: "plat_term_write", lem: "plat_term_write"} : (bits(64) ,bits(8)) -> unit
+val plat_term_open = impure {c: "plat_term_open"} : (int, int) -> xlenbits 
+val plat_term_read  = impure {c: "plat_term_read"}  : (bits(64), bits(64)) -> string
+val plat_term_close  = impure {c: "plat_term_close"}  : bits(64) -> xlenbits
+val plat_term_seek  = impure {c: "plat_term_seek"}  :(bits(64), bits(64), bits(64)) -> xlenbits
+val plat_term_gettimeofday = pure {c: "plat_term_gettimeofday"} : unit -> unit
+val plat_term_times = pure {c: "plat_term_times"} : unit -> unit
+val plat_term_fstat = pure {c: "plat_term_fstat"} : (bits(64)) -> xlenbits
+val plat_term_utime = pure {c: "plat_term_utime"} : (bits(64), bits(64)) -> xlenbits
+/* for syscall */
 
 /* Spike's HTIF device interface, which multiplexes the above MMIO devices. */
 
@@ -366,34 +436,377 @@ function htif_store(paddr, width, data) = {
         | (unsigned(htif_payload_writes) > 2))
   then {
     let cmd = Mk_htif_cmd(htif_tohost);
-    match cmd[device] {
-      0x00 => { /* syscall-proxy */
-        if   get_config_print_platform()
-        then print_platform("htif-syscall-proxy cmd: " ^ BitStr(cmd[payload]));
-        if   cmd[payload][0] == bitone
-        then {
-             print_ic_stats();
-             print_dc_stats();
-             print_l2_stats();
-             htif_done = true;
-             htif_exit_code = (sail_zero_extend(cmd[payload], 64) >> 1)
+    /* for sysycall */
+    //print("htif_tohost: " ^ BitStr(htif_tohost));
+
+    /*=== get system number and print it ===*/
+    let syscall_number_tuple = read_ram(Read_plain, sail_zero_extend(cmd[payload], 64), 8, false);
+    let (syscall_number_bits_const  , _) = syscall_number_tuple;
+    let syscall_number_bits_var : xlenbits = syscall_number_bits_const;
+    let syscall_number : int = int_of_bits(syscall_number_bits_var);
+    //print("syscall_number_bits: " ^ BitStr(syscall_number_bits_var));
+    //print_int("syscall_number:  ", syscall_number);
+    /*======================================*/
+
+    /*=== get a0  ===*/
+    let a0_tuple = read_ram(Read_plain, sail_zero_extend(cmd[payload] + 8, 64), 8, false);
+    let (a0_bits_const  , _) = a0_tuple;
+    let a0_bits_var : xlenbits = a0_bits_const;
+    let a0 : int = int_of_bits(a0_bits_var);
+    //print("a0_bits: " ^ BitStr(a0_bits_var));
+    //print_int("a0:  ", a0);
+    /*===============*/
+    /*=== get a1  ===*/
+    let a1_tuple = read_ram(Read_plain, sail_zero_extend(cmd[payload] + 16, 64), 8, false);
+    let (a1_bits_const  , _) = a1_tuple;
+    let a1_bits_var : xlenbits = a1_bits_const;
+    let a1 : int = int_of_bits(a1_bits_var);
+    //print("a1_bits: " ^ BitStr(a1_bits_var));
+    //print_int("a1:  ", a1);
+    /*===============*/
+    /*=== get a2  ===*/
+    let a2_tuple = read_ram(Read_plain, sail_zero_extend(cmd[payload] + 24, 64), 8, false);
+    let (a2_bits_const  , _) = a2_tuple;
+    let a2_bits_var : xlenbits = a2_bits_const;
+    let a2 : int = int_of_bits(a2_bits_var);
+    //print("a2_bits: " ^ BitStr(a2_bits_var));
+    //print_int("a2:  ", a2);
+    /*=============-==*/
+
+    match syscall_number {
+      /*=== sys_close ===*/
+        57 => {
+          let n = plat_term_close(a0_bits_var);
+          //print("check close file = " ^ BitStr(n));
+        },
+        /*=== sys_lseek ===*/
+        62 => {
+          let n = plat_term_seek(a0_bits_var,a1_bits_var,a2_bits_var);
+        },
+        /*=== sys_read ===*/
+        63 => {
+        
+          let ret_string = plat_term_read(a0_bits_var, a2_bits_var);
+          //print("ret_string = " ^ ret_string);
+          // print_int("string_length = " , string_len);
+          if string_len == sign_extend(0b1)
+          then {
+            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8, string_len, ());
+          }
+          else {
+            let  str_len = int_of_bits(string_len);
+/*
+            var vec_argv_count : int = 0;
+            if emod_int(string_length(vec_argv[i]) + 1, 8) == 0  
+            then vec_argv_count = ediv_int(sub_int(string_length(vec_argv[i]) + 1, 1),8)
+            else vec_argv_count = ediv_int(string_length(vec_argv[i]) + 1,8);
+*/
+            foreach(i from 0 to ediv_int(str_len, 8)){
+                var append_str : bits(64) = zero_extend(0b0);
+                var len_copy : int = 0;
+                if str_len - (i * 8) > 8  
+                then len_copy = 8
+                else len_copy = (str_len - (i * 8));
+                foreach(j from 0 to (len_copy - 1)){
+                  let bos = bits_of_string(ret_string, j + i*8);
+                  if j < 8
+                  then append_str = vector_update_subrange(append_str, j*8+7 ,j*8, bos); 
+                  //print("append_str = " ^ BitStr(append_str));
+                };
+                let _ = write_ram(Write_plain, a1_bits_var + i * 8, 8, append_str, ());
+              
+            };
+            //string_length(ret_string)回傳為int，需呼叫bits_of_int來轉成bitvector
+            //print("ret_string: " ^ BitStr(bits_of_int(string_length(ret_string))));
+            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  string_len, ());
+          }
+        },
+                  
+        /*=== sys_write ===*/
+        64 => {
+          //一個dw只有64bit，只能容納8個char需算出總共多少個dw
+          var dw_count : int = 0;   //計算多少個double world 這裡為0的話 其實代表1個dw
+          var char_count : int = 0; //計算寫了多少個char 當作write()的回傳值
+          //如果字串長度為8的倍數，會導致dw_count每次算出來都多1，例如a2=8,dw_count=1，所以改成如果為8的倍數就先減1 
+          if a2 > 0 & emod_int(a2, 8) == 0  
+          then dw_count = ediv_int(sub_int(a2,1),8)
+          else dw_count = ediv_int(a2,8);
+
+          //利用先前算出來的dw_count把所有字串印出來
+          foreach(i from 0 to dw_count){
+              //如果a2 - (i*8)大於8，也就是說字串剩餘長度大於8，接下來要把一個dw給印出來
+              var char_len : int = 0;
+              if a2 - (i * 8) > 8  
+              then char_len = 8
+              else char_len = (a2 - (i * 8));
+              
+              //把字串讀出來，位置為a1_bits_var + (i * 8)
+              let temp_tuple = read_ram(Read_plain, a1_bits_var + (i * 8) , 8, false);
+              let (char_bits_const, _) = temp_tuple;
+              //print("string = " ^ BitStr(char_bits_const));
+
+              var char_bits_var : xlenbits = char_bits_const;
+                foreach(j from 0 to sub_int(char_len,1)){
+                  //fwrite()會將0印出，因此需要檢查char如果為0，就不要寫入
+              //    if char_bits_var[7 .. 0] != 0x00
+                //  then {
+                    char_count = char_count + 1;
+                    plat_term_write(a0_bits_var, char_bits_var[7 .. 0]);
+                  //};
+                  
+                  //print("char = " ^ BitStr(char_bits_var[7 .. 0]));
+
+                  char_bits_var = char_bits_var >> 8;
+                };
+                //讀完後需要把剛剛的記憶體給清0
+                let _ = write_ram(Write_plain, a1_bits_var + (i * 8), 8,  zero_extend(0b0), ());
+          };
+          //print_int("char_count = " , char_count);
+          if char_count == 0
+          then {let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  sign_extend(0b1), ())}
+          else {let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  zero_extend(bits_of_int(char_count)), ())};
+        },
+        /*=== sys_fstat === xxx*/
+        80 => {
+          let ret = plat_term_fstat(a0_bits_var);
+          //print("st_ino = " ^ BitStr(st_ino));
+
+          let _ = write_ram(Write_plain, a1_bits_var , 2, st_dev, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 2 , 2, st_ino, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 4 , 4, st_mode, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 8 , 2, st_nlink, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 10 , 2, st_uid, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 12 , 2, st_gid, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 14 , 2, st_rdev, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 16 , 8, st_s, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 24 , 8, st_atim_sec, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 32 , 8, st_atim_nsec, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 40 , 8, st_mtim_sec, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 48 , 8, st_mtim_nsec, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 56 , 8, st_ctim_sec, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 64 , 8, st_ctim_nsec, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 72 , 8, st_blk, ());
+          let _ = write_ram(Write_plain, a1_bits_var + 80 , 8, st_blocks, ());
+
+            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  ret, ());
+
+        },
+      /*=== sys_exit ===*/
+        93 => {
+            let x : xlenbits = to_bits(sizeof(xlen), 1);
+            //print("to_bits" ^ BitStr(x));
+            htif_done = true;
+            htif_exit_code =  (a0_bits_var << 1) | x;
+
+        },
+        /*=== sys_times. ===*/
+        168 => {
+            let _ = plat_term_times();
+            let _ = write_ram(Write_plain, a0_bits_var , 8, tms_utime, ());
+            let _ = write_ram(Write_plain, a0_bits_var + 8, 8, zero_extend(0b0), ());
+            let _ = write_ram(Write_plain, a0_bits_var + 16, 8, zero_extend(0b0), ());
+            let _ = write_ram(Write_plain, a0_bits_var + 24, 8, zero_extend(0b0), ());
+
+            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  tms_utime, ());
+
+        },
+        /*=== sys_utime ===*/
+        1000 => {
+            /*
+            最大字元數先設為256個
+            64bits為8個字元 所以256/8 = 32
+            */
+            
+            var flag : bool = true;
+            var i : int = 0;
+            while flag & i<=31 do {
+              let temp_tuple = read_ram(Read_plain, a0_bits_var + (i * 8) , 8, false);
+              let (char_bits_const, _) = temp_tuple;
+              //print("string = " ^ BitStr(char_bits_const));
+
+              var char_bits_var : xlenbits = char_bits_const;
+              foreach(j from 0 to 7){
+                  if char_bits_var[7 .. 0] == 0x00
+                  then flag = false
+                  else {
+                    getChar2C(char_bits_var[7 .. 0]);
+                    char_bits_var = char_bits_var >> 8;
+                  }
+              };             
+              i = i + 1;
+            };
+
+            let temp_tuple = read_ram(Read_plain, a1_bits_var, 8, false);
+            let (actime_bits, _) = temp_tuple;
+            let temp_tuple2 = read_ram(Read_plain, a1_bits_var + 8, 8, false);
+            let (modtime_bits, _) = temp_tuple2;
+            //print("string = " ^ BitStr(char_bits_const));
+
+            let ret = plat_term_utime(actime_bits, modtime_bits);
+            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  ret, ());
+
+        },
+        /*=== sys_gettimeofday. ===*/
+        169 => {
+            let _ = plat_term_gettimeofday();
+            let _ = write_ram(Write_plain, a0_bits_var , 8, tv_sec, ());
+            let _ = write_ram(Write_plain, a0_bits_var + 8 , 8, tv_usec, ());
+
+            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  zero_extend(0b0), ());
+
+        },
+
+        /*=== sys_open ===*/
+        1024 => {
+
+            /*
+            最大字元數先設為256個
+            64bits為8個字元 所以256/8 = 32
+            */
+            var flag : bool = true;
+            var i : int = 0;
+            while flag & i<=31 do {
+              let temp_tuple = read_ram(Read_plain, a0_bits_var + (i * 8) , 8, false);
+              let (char_bits_const, _) = temp_tuple;
+              //print("string = " ^ BitStr(char_bits_const));
+
+              var char_bits_var : xlenbits = char_bits_const;
+              foreach(j from 0 to 7){
+                  if char_bits_var[7 .. 0] == 0x00
+                  then flag = false
+                  else {
+                    getChar2C(char_bits_var[7 .. 0]);
+                    char_bits_var = char_bits_var >> 8;
+                  }
+              };             
+              i = i + 1;
+            };
+            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  plat_term_open(a1, a2), ());
+
+        },
+        /*=== sys_getmainvars ===*/
+        2011 => {
+            
+            var vec_argv : vector(10, dec, string) = ["0","0","0","0","0","0","0","0","0","0"];
+            var vec_word : vector(10, dec, int) = [0,0,0,0,0,0,0,0,0,0];
+            var vec_addr : vector(10, dec, int) = [0,0,0,0,0,0,0,0,0,0];
+
+            let _ = write_ram(Write_plain, a0_bits_var, 8, bits_of_int(htif_argc), ());
+            //print_int("htif_argc=" , htif_argc);
+            //print("htif_argc=" ^ BitStr(bits_of_int(htif_argc)));
+
+/*
+            let _ = write_ram(Write_plain, a0_bits_var + 8, 8, a0_bits_var + zero_extend(0x20), ());
+            let _ = write_ram(Write_plain, a0_bits_var + 16, 8, zero_extend(0x0), ());
+            let _ = write_ram(Write_plain, a0_bits_var + 24, 8, zero_extend(0x0), ());
+            let _ = write_ram(Write_plain, a0_bits_var + 32, 8, zero_extend(0x3837363534333231), ());
+            let _ = write_ram(Write_plain, a0_bits_var + 40, 8, zero_extend(0x3132333435363738), ());
+*/
+
+            //get argv string and len
+            foreach(i from 0 to sub_int(htif_argc, 1)){
+              if i < 10
+              then { vec_argv[i] = get_argv(i);
+                      //print("vec_argv=" ^ vec_argv[i]);
+                      var vec_argv_count : int = 0;
+                      if emod_int(string_length(vec_argv[i]) + 1, 8) == 0  
+                      then vec_argv_count = ediv_int(sub_int(string_length(vec_argv[i]) + 1, 1), 8)
+                      else vec_argv_count = ediv_int(string_length(vec_argv[i]) + 1, 8);
+                      vec_word[i]  = vec_argv_count;
+                      //print_int("vec_argv = " , string_length(vec_argv[i])+1 );
+                      //print_int("vec_word=" , vec_word[i]);
+              }
+            };
+            
+            
+            //set argv address 
+            var count_word : int = htif_argc + 2 + 1;
+            //print("=================================================");
+
+            foreach(i from 0 to sub_int(htif_argc, 1)){
+              if i < 10
+              then { vec_addr[i] = count_word;
+                      //print_int("vec_addr = ", vec_addr[i]);
+
+                      let _ = write_ram(Write_plain, a0_bits_var + (i+1)*8 , 8, a0_bits_var + bits_of_int(vec_addr[i]*8), ());
+                      //print_int("a0_bits_var + " , (i+1)*8);
+                      //print("a0_bits_var + " ^ BitStr(bits_of_int(vec_addr[i]*8)));
+
+                      count_word = count_word + vec_word[i] + 1;
+              }
+            };  
+            //print("=================================================");
+
+            //set null 
+            let _ = write_ram(Write_plain, a0_bits_var + (htif_argc+1)*8 , 8, zero_extend(0x0), ());
+            let _ = write_ram(Write_plain, a0_bits_var + (htif_argc+2)*8 , 8, zero_extend(0x0), ());
+
+            //set argv char
+
+
+            foreach(i from 0 to sub_int(htif_argc, 1)){
+              if i < 10
+              then {
+                
+                var vec_argv_count : int = 0;
+                if emod_int(string_length(vec_argv[i]) + 1, 8) == 0  
+                then vec_argv_count = ediv_int(sub_int(string_length(vec_argv[i]) + 1, 1),8)
+                else vec_argv_count = ediv_int(string_length(vec_argv[i]) + 1,8);
+                //print_int("vec_argv_count = ", vec_argv_count);
+                
+                foreach(j from 0 to vec_argv_count /*ediv_int(string_length(vec_argv[i]) ,8)*/){
+                  var append_str : bits(64) = zero_extend(0b0);
+                  var len_copy : int = 0;
+                  if string_length(vec_argv[i]) - (j * 8) > 8  
+                  then len_copy = 8
+                  else len_copy = (string_length(vec_argv[i]) - (j * 8));
+                  foreach(k from 0 to (len_copy - 1)){
+                    let bos = bits_of_string(vec_argv[i], k + j*8);
+                    if k < 8
+                    then append_str = vector_update_subrange(append_str, k*8+7 ,k*8, bos); 
+                  //  print("append_str = " ^ BitStr(append_str));
+                  };
+
+                  let _ = write_ram(Write_plain, a0_bits_var + (vec_addr[i] + j)*8, 8, append_str, ());
+
+                };
+              }
+            };
+
+        },
+        n => { 
+            ()
+            //print_int("bad syscall #", n);
+            //let x : xlenbits = to_bits(sizeof(xlen), 1);
+            //htif_done = true;
+            //htif_exit_code =  (a0_bits_var << 1) | x;
         }
-        else ()
-      },
-      0x01 => { /* terminal */
-        if   get_config_print_platform()
-        then print_platform("htif-term cmd: " ^ BitStr(cmd[payload]));
-        match cmd[cmd] {
-          0x00 => /* TODO: terminal input handling */ (),
-          0x01 => plat_term_write(cmd[payload][7..0]),
-          c    => print("Unknown term cmd: " ^ BitStr(c))
-        };
-        /* reset to ack */
-        reset_htif()
-      },
-      d => print("htif-???? cmd: " ^ BitStr(data))
-    }
+
+    };
+    
+    /*=== if payload[0] eqaul 1, program stop ===*/
+    
+    if cmd[payload][0] == bitone
+    then {
+        /* cache */
+        print_ic_stats();
+        print_dc_stats();
+        print_l2_stats();
+        /* cache */
+
+        htif_done = true;
+        //print("payload = " ^ BitStr(cmd[payload]));
+        htif_exit_code = (sail_zero_extend(cmd[payload], 64) >> 1);
+        //print("payload = " ^ BitStr(htif_exit_code));
+    };
+    
+    /*======================================*/
+    let a = plat_htif_fromhost();
+    //print("fromhost = " ^ BitStr(a));
+    reset_htif()
   };
+  let _ = write_ram(Write_plain, plat_htif_tohost()+8, 8, sign_extend(0b1), ());
+  /* for sysycall */
   MemValue(true)
 }
 

@@ -49,6 +49,9 @@ extern mach_bits zxlen_val;
 extern bool zhtif_done;
 extern mach_bits zhtif_exit_code;
 extern bool have_exception;
+/* for syscall */
+extern sail_int zhtif_argc; 
+/* for syscall */
 
 /* machine state */
 

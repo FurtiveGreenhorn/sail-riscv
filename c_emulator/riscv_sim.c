@@ -260,10 +260,28 @@ static int ilog2(uint64_t x)
  * additional ELF files that should be loaded into memory (but not scanned
  * for the magic tohost/{begin,end}_signature symbols).
  */
+
+/* for syscall */
+char ** copy_argv;
+
+void get_argv(sail_string* s, sail_int i){
+  char* s2;
+  //printf("len = %d\n", strlen(copy_argv[optind + mpz_get_si(i)]));
+  //printf("copy_argv = %s\n", copy_argv[optind + mpz_get_si(i)]);
+  s2 = malloc(strlen(copy_argv[optind + mpz_get_si(i)])+1);
+  strcpy(s2,copy_argv[optind + mpz_get_si(i)]);
+  *s = s2;
+  //printf("%s\n", *s);
+  return;
+}
+/* for syscall */
 static int process_args(int argc, char **argv)
 {
   int c;
   uint64_t ram_size = 0;
+  /* for syscall */
+  setenv("POSIXLY_CORRECT", "1", 1); //取消getopt_long重新排序argv，不然getopt_long會把'-'開頭的參數移到前面去
+  /* for syscall */
   uint64_t pmp_count = 0;
   uint64_t pmp_grain = 0;
   uint64_t block_size_exp = 0;
@@ -477,6 +495,12 @@ static int process_args(int argc, char **argv)
   if (!rvfi_dii)
 #endif
     fprintf(stdout, "Running file %s.\n", argv[optind]);
+
+  /* for syscall */
+  mpz_set_ui(zhtif_argc, argc - optind); 
+  copy_argv = argv;
+  //printf("argv[optind] = %s, optind = %d\n", argv[optind], optind);
+  /* for syscall */
   return optind;
 }
 
@@ -514,6 +538,13 @@ uint64_t load_sail(char *f, bool main_file)
     exit(1);
   }
   fprintf(stderr, "tohost located at 0x%0" PRIx64 "\n", rv_htif_tohost);
+  /* for syscall */
+  if (lookup_sym(f, "fromhost", &rv_htif_fromhost) < 0) {
+    fprintf(stderr, "Unable to locate htif fromhost port.\n");
+    exit(1);
+  }
+  fprintf(stderr, "fromhost located at 0x%0" PRIx64 "\n", rv_htif_fromhost);
+  /* for syscall */
   /* locate test-signature locations if any */
   if (!lookup_sym(f, "begin_signature", &begin_sig)) {
     fprintf(stdout, "begin_signature: 0x%0" PRIx64 "\n", begin_sig);
