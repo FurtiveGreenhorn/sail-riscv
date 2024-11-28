@@ -254,17 +254,20 @@ function legalize_mstatus(o : Mstatus, v : xlenbits) -> Mstatus = {
    * but only if Zfinx isn't enabled.
    * FIXME: This should be made a platform parameter.
    */
-  let dirty = extStatus_of_bits(m[FS]) == Dirty | extStatus_of_bits(m[XS]) == Dirty |
-              extStatus_of_bits(m[VS]) == Dirty;
-
-  /* Legalize MPP */
   let m = [m with
+    /* Legalize MPP */
     MPP = if have_privLevel(m[MPP]) then m[MPP] else privLevel_to_bits(lowest_supported_privLevel()),
     /* We don't have any extension context yet. */
     XS = extStatus_to_bits(Off),
-    SD = bool_to_bits(dirty),
     FS = if sys_enable_zfinx() then extStatus_to_bits(Off) else m[FS],
     MPRV = if extensionEnabled(Ext_U) then m[MPRV] else 0b0,
+  ];
+
+  // Set dirty bit to OR of other status bits.
+  let m = [m with
+    SD = bool_to_bits(extStatus_of_bits(m[FS]) == Dirty |
+                      extStatus_of_bits(m[XS]) == Dirty |
+                      extStatus_of_bits(m[VS]) == Dirty),
   ];
 
   /* We don't support dynamic changes to SXL and UXL. */
@@ -324,7 +327,11 @@ function legalize_mip(o : Minterrupts, v : xlenbits) -> Minterrupts = {
   /* The only writable bits are the S-mode bits, and with the 'N'
    * extension, the U-mode bits. */
   let v = Mk_Minterrupts(v);
-  [o with SEI = v[SEI], STI = v[STI], SSI = v[SSI]]
+  [o with
+    SEI = if extensionEnabled(Ext_S) then v[SEI] else 0b0,
+    STI = if extensionEnabled(Ext_S) then v[STI] else 0b0,
+    SSI = if extensionEnabled(Ext_S) then v[SSI] else 0b0,
+  ]
 }
 
 function legalize_mie(o : Minterrupts, v : xlenbits) -> Minterrupts = {
@@ -333,9 +340,9 @@ function legalize_mie(o : Minterrupts, v : xlenbits) -> Minterrupts = {
     MEI = v[MEI],
     MTI = v[MTI],
     MSI = v[MSI],
-    SEI = v[SEI],
-    STI = v[STI],
-    SSI = v[SSI]
+    SEI = if extensionEnabled(Ext_S) then v[SEI] else 0b0,
+    STI = if extensionEnabled(Ext_S) then v[STI] else 0b0,
+    SSI = if extensionEnabled(Ext_S) then v[SSI] else 0b0,
   ]
 }
 
