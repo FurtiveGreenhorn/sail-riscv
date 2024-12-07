@@ -257,6 +257,7 @@ mapping clause encdec = RTYPE(rs2, rs1, rd, RISCV_SUB)  <-> 0b0100000 @ rs2 @ rs
 mapping clause encdec = RTYPE(rs2, rs1, rd, RISCV_SRA)  <-> 0b0100000 @ rs2 @ rs1 @ 0b101 @ rd @ 0b0110011
 
 function clause execute (RTYPE(rs2, rs1, rd, op)) = {
+  show_inst(rs1, rs2, rd);
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
   let result : xlenbits = match op {

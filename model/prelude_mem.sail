@@ -101,6 +101,9 @@ val print_ic_stats = pure {c: "print_ic_stats"} : unit -> unit
 val print_dc_stats = pure {c: "print_dc_stats"} : unit -> unit
 val print_l2_stats = pure {c: "print_l2_stats"} : unit -> unit
 
+val enum_test = pure {c: "enum_test"} : write_kind -> unit
+val show_inst = pure {c: "show_instruction"} : (bits(5), bits(5), bits(5)) -> unit
+
 /* cache api test */
 
 val write_ram : forall 'n, 0 < 'n <= max_mem_access. (write_kind, xlenbits, int('n), bits(8 * 'n), mem_meta) -> bool
@@ -122,7 +125,7 @@ function write_ram(wk, addr, width, data, meta) = {
     value = Some(data),
     tag = None(),
   };
-
+  enum_test(Write_RISCV_conditional);
   /* Write out metadata only if the value write succeeds.
    * It is assumed for now that this write always succeeds;
    * there is currently no return value.

@@ -267,7 +267,7 @@ $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o: generated_definitions/c/riscv_model_$(AR
 # 產生 Cache 的 LIB
 CACHE_DIR = c_emulator/Cache
 Cache_LIBDIR = $(CACHE_DIR)/build
-Cache_LIBS = $(Cache_LIBDIR)/cache.a
+Cache_LIBS = $(Cache_LIBDIR)/cachelib.a
 $(Cache_LIBS):
 	$(MAKE) -C $(Cache_LIBDIR)
 
