@@ -27,6 +27,7 @@ $(LIB): $(OBJS)
 	$(MAKELIB) $^
 
 # 編譯規則：將 .cpp 編譯為 .o
+# FixMe: 無法根據依賴自動更新，當前檔案更動後需要make clean後才能重新make
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(@D)   # 自動建立目錄
 	$(CXX) -g $(CXXFLAGS) -c -I$(SAIL_LIB_DIR) $< -o $@

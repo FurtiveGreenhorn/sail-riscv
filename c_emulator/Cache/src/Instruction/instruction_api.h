@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-unit show_instruction(mach_bits rs1, mach_bits rs2, mach_bits rd);
+unit show_instructions(mach_bits rs1, mach_bits rs2, mach_bits rd);
 
 #ifdef __cplusplus
 }
