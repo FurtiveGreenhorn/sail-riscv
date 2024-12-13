@@ -22,10 +22,15 @@ enum Instruction_type : unsigned {
     INST_csrrc, INST_csrrci, INST_csrrs, INST_csrrsi, INST_csrrw, INST_csrrwi
 };
 
+using RegNum = unsigned;
 struct Instruction {
     uint64_t addr;
-    Instruction_type inst_type;
-    unsigned rs1, rs2, rd;
+    Instruction_type type;
+    RegNum rs1, rs2, rd;
+
+    bool is_load() {
+        return (INST_lb <= type) && (type <= INST_ld);
+    }
 };
 
 void show_instruction(int rs1, int rs2, int rd);

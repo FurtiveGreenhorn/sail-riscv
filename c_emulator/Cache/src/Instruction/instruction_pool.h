@@ -3,6 +3,8 @@
 #include "instruction.h"
 #include <cassert>
 
+#define INST_POOL_SIZE 5
+
 template<auto size>
 class Instruction_pool {
 public:
@@ -12,7 +14,7 @@ public:
         if (end == size) end = 0;
         return &inst[end++]; 
     }
-    void *freeInst(unsigned num = 1) {
+    std::size_t freeInst() {
         // FixMe: should support empty checking
         // ToDo: dtor inst if needed
         if (start == size) start = 0;
