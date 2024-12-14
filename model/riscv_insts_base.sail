@@ -343,7 +343,7 @@ function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
 
           match mem_read(Read(Data), paddr, width_bytes, aq, rl, false) {
             MemValue(result) => { 
-              // dc_read(paddr);
+              dc_read(physaddr_bits(paddr));
               X(rd) = extend_value(is_unsigned, result); RETIRE_SUCCESS 
             },
             MemException(e) => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
@@ -399,7 +399,7 @@ function clause execute (STORE(imm, rs2, rs1, width, aq, rl)) = {
       else match translateAddr(vaddr, Write(Data)) {
         TR_Failure(e, _)    => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
         TR_Address(paddr, _) => {
-          // dc_write(paddr);
+          dc_write(physaddr_bits(paddr));
           let eares = mem_write_ea(paddr, width_bytes, aq, rl, false);
           match (eares) {
             MemException(e) => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
