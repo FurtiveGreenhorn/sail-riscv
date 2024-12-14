@@ -13,11 +13,11 @@ enum Instruction_type : unsigned {
     INST_srl, INST_srlw, INST_srli, INST_srliw,
     INST_lui, INST_auipc,
     INST_slt, INST_sltu, INST_slti, INST_sltiu,
-    INST_be, INST_bne,
-    INST_bqe, INST_bqeu, INST_blt, INST_bltu,
+    INST_beq, INST_bne,
+    INST_bge, INST_bgeu, INST_blt, INST_bltu,
     INST_jal, INST_jalr,
-    INST_lb, INST_lh, INST_lw, INST_ld, INST_sb, INST_sh, INST_sw, INST_sd,
-    INST_lbu, INST_lhu, INST_lwu,
+    INST_lb, INST_lbu, INST_lh, INST_lhu,INST_lw, INST_lwu, INST_ld, 
+    INST_sb, INST_sh, INST_sw, INST_sd,
     INST_fence, INST_ebreak, INST_ecall,
     INST_csrrc, INST_csrrci, INST_csrrs, INST_csrrsi, INST_csrrw, INST_csrrwi
 };
@@ -27,9 +27,32 @@ struct Instruction {
     uint64_t addr;
     Instruction_type type;
     RegNum rs1, rs2, rd;
+    bool taken, is_used = false;
+
+    void set_addr(uint64_t new_addr) {
+        addr = new_addr;
+    }
+    void set_rs1(RegNum new_rs1) {
+        rs1 = new_rs1;
+    }
+    void set_rs2(RegNum new_rs2) {
+        rs2 = new_rs2;
+    }
+    void set_rd(RegNum new_rd) {
+        rd = new_rd;
+    } 
+    void set_taken(bool new_taken) {
+        taken = new_taken;
+    }
 
     bool is_load() {
         return (INST_lb <= type) && (type <= INST_ld);
+    }
+    bool is_branch() {
+        return (INST_beq <= type) && (type <= INST_bltu);
+    }
+    bool is_jump() {
+        return (type == INST_jal) || (type == INST_jalr);
     }
 };
 

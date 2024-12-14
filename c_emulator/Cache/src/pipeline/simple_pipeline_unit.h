@@ -1,8 +1,14 @@
 #include "../Instruction/instruction_pool.h"
 #include "../Instruction/instruction.h"
-#include "simple_pipeline_unit_base.h"
+#include "simple_pipeline_unit_concept.h"
 
 class Cache {};
+class HazardDetectionUnit {
+
+private:
+    bool IdExMemRead = false;
+    
+};
 
 class Fetch : public SimplePipelineStageLogicMixIn<Fetch> {
 public:
@@ -15,21 +21,35 @@ private:
 };
 class Decode : public SimplePipelineStageLogicMixIn<Decode> {
 public:
+    Decode(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {}
+    void process_stage() {
+        // ToDo send data to hazard unit
+
+    }
     RegNum rs1_flow_out() {
         return data->rs1;
     }
     RegNum rs2_flow_out() {
         return data->rs2;
     }
+private:
+    HazardDetectionUnit *hazard_detection_unit;
 };
 class Execute: public SimplePipelineStageLogicMixIn<Execute> {
 public:
+    Execute(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {}
+    void process_stage() {
+        // ToDo send data to hazard unit
+
+    }
     bool mem_read() {
         return data->is_load();
     }
     RegNum rd_flow_out() {
         return data->rs1;
     }
+private:
+    HazardDetectionUnit *hazard_detection_unit;
 };
 class Mem : public SimplePipelineStageLogicMixIn<Mem> {
 public:
@@ -55,22 +75,22 @@ class WB : public SimplePipelineStageLogicMixIn<WB> {};
 // PIPELINE_REG_CLASS(ExMemReg, Execute, Mem)
 // PIPELINE_REG_CLASS(MemWbReg, Mem, WB)
 
-class IfIdReg : SimplePipelineRegMixin<IfIdReg, Fetch, Decode> {
+class IfIdReg : public SimplePipelineRegMixin<IfIdReg, Fetch, Decode> {
 public:
     IfIdReg(Fetch *fetch, Decode *decode)
         : SimplePipelineRegMixin(fetch, decode) {}
 };
-class IdExReg : SimplePipelineRegMixin<IdExReg, Decode, Execute> {
+class IdExReg : public SimplePipelineRegMixin<IdExReg, Decode, Execute> {
 public:
     IdExReg(Decode *decode, Execute *execute)
         : SimplePipelineRegMixin(decode, execute) {}
 };
-class ExMemReg : SimplePipelineRegMixin<ExMemReg, Execute, Mem> {
+class ExMemReg : public SimplePipelineRegMixin<ExMemReg, Execute, Mem> {
 public:
     ExMemReg(Execute *execute, Mem *mem)
         : SimplePipelineRegMixin(execute, mem) {}
 };
-class MemWbReg : SimplePipelineRegMixin<MemWbReg, Mem, WB> {
+class MemWbReg : public SimplePipelineRegMixin<MemWbReg, Mem, WB> {
 public:
     MemWbReg(Mem *mem, WB *wb)
         : SimplePipelineRegMixin(mem, wb) {}

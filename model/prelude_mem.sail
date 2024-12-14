@@ -106,22 +106,6 @@ val show_inst = pure {c: "show_instruction"} : (bits(5), bits(5), bits(5)) -> un
 
 /* cache api test */
 
-/* cache api test */
-val cache_init = impure {c: "cache_init"} : unit -> unit
-
-val ic_read = impure {c: "ic_read"} : xlenbits -> unit
-val dc_read = impure {c: "dc_read"} : xlenbits -> unit
-val dc_write = impure {c: "dc_write"} : xlenbits -> unit
-
-val print_ic_stats = pure {c: "print_ic_stats"} : unit -> unit
-val print_dc_stats = pure {c: "print_dc_stats"} : unit -> unit
-val print_l2_stats = pure {c: "print_l2_stats"} : unit -> unit
-
-val enum_test = pure {c: "enum_test"} : write_kind -> unit
-val show_inst = pure {c: "show_instruction"} : (bits(5), bits(5), bits(5)) -> unit
-
-/* cache api test */
-
 val write_ram : forall 'n, 0 < 'n <= max_mem_access. (write_kind, physaddr, int('n), bits(8 * 'n), mem_meta) -> bool
 
 function write_ram(wk, physaddr(addr), width, data, meta) = {

@@ -454,7 +454,7 @@ function htif_store(physaddr(paddr), width, data) = {
     //print("htif_tohost: " ^ BitStr(htif_tohost));
 
     /*=== get system number and print it ===*/
-    let syscall_number_tuple = read_ram(Read_plain, sail_zero_extend(cmd[payload], 64), 8, false);
+    let syscall_number_tuple = read_ram(Read_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8, false);
     let (syscall_number_bits_const  , _) = syscall_number_tuple;
     let syscall_number_bits_var : xlenbits = syscall_number_bits_const;
     let syscall_number : int = int_of_bits(syscall_number_bits_var);
@@ -463,7 +463,7 @@ function htif_store(physaddr(paddr), width, data) = {
     /*======================================*/
 
     /*=== get a0  ===*/
-    let a0_tuple = read_ram(Read_plain, sail_zero_extend(cmd[payload] + 8, 64), 8, false);
+    let a0_tuple = read_ram(Read_plain, physaddr(sail_zero_extend(cmd[payload] + 8, 64)), 8, false);
     let (a0_bits_const  , _) = a0_tuple;
     let a0_bits_var : xlenbits = a0_bits_const;
     let a0 : int = int_of_bits(a0_bits_var);
@@ -471,7 +471,7 @@ function htif_store(physaddr(paddr), width, data) = {
     //print_int("a0:  ", a0);
     /*===============*/
     /*=== get a1  ===*/
-    let a1_tuple = read_ram(Read_plain, sail_zero_extend(cmd[payload] + 16, 64), 8, false);
+    let a1_tuple = read_ram(Read_plain, physaddr(sail_zero_extend(cmd[payload] + 16, 64)), 8, false);
     let (a1_bits_const  , _) = a1_tuple;
     let a1_bits_var : xlenbits = a1_bits_const;
     let a1 : int = int_of_bits(a1_bits_var);
@@ -479,7 +479,7 @@ function htif_store(physaddr(paddr), width, data) = {
     //print_int("a1:  ", a1);
     /*===============*/
     /*=== get a2  ===*/
-    let a2_tuple = read_ram(Read_plain, sail_zero_extend(cmd[payload] + 24, 64), 8, false);
+    let a2_tuple = read_ram(Read_plain, physaddr(sail_zero_extend(cmd[payload] + 24, 64)), 8, false);
     let (a2_bits_const  , _) = a2_tuple;
     let a2_bits_var : xlenbits = a2_bits_const;
     let a2 : int = int_of_bits(a2_bits_var);
@@ -505,7 +505,7 @@ function htif_store(physaddr(paddr), width, data) = {
           // print_int("string_length = " , string_len);
           if string_len == sign_extend(0b1)
           then {
-            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8, string_len, ());
+            let _ = write_ram(Write_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8, string_len, ());
           }
           else {
             let  str_len = int_of_bits(string_len);
@@ -527,12 +527,12 @@ function htif_store(physaddr(paddr), width, data) = {
                   then append_str = vector_update_subrange(append_str, j*8+7 ,j*8, bos); 
                   //print("append_str = " ^ BitStr(append_str));
                 };
-                let _ = write_ram(Write_plain, a1_bits_var + i * 8, 8, append_str, ());
+                let _ = write_ram(Write_plain, physaddr(a1_bits_var + i * 8), 8, append_str, ());
               
             };
             //string_length(ret_string)回傳為int，需呼叫bits_of_int來轉成bitvector
             //print("ret_string: " ^ BitStr(bits_of_int(string_length(ret_string))));
-            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  string_len, ());
+            let _ = write_ram(Write_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8,  string_len, ());
           }
         },
                   
@@ -555,7 +555,7 @@ function htif_store(physaddr(paddr), width, data) = {
               else char_len = (a2 - (i * 8));
               
               //把字串讀出來，位置為a1_bits_var + (i * 8)
-              let temp_tuple = read_ram(Read_plain, a1_bits_var + (i * 8) , 8, false);
+              let temp_tuple = read_ram(Read_plain, physaddr(a1_bits_var + (i * 8)) , 8, false);
               let (char_bits_const, _) = temp_tuple;
               //print("string = " ^ BitStr(char_bits_const));
 
@@ -573,36 +573,36 @@ function htif_store(physaddr(paddr), width, data) = {
                   char_bits_var = char_bits_var >> 8;
                 };
                 //讀完後需要把剛剛的記憶體給清0
-                let _ = write_ram(Write_plain, a1_bits_var + (i * 8), 8,  zero_extend(0b0), ());
+                let _ = write_ram(Write_plain, physaddr(a1_bits_var + (i * 8)), 8,  zero_extend(0b0), ());
           };
           //print_int("char_count = " , char_count);
           if char_count == 0
-          then {let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  sign_extend(0b1), ())}
-          else {let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  zero_extend(bits_of_int(char_count)), ())};
+          then {let _ = write_ram(Write_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8,  sign_extend(0b1), ())}
+          else {let _ = write_ram(Write_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8,  zero_extend(bits_of_int(char_count)), ())};
         },
         /*=== sys_fstat === xxx*/
         80 => {
           let ret = plat_term_fstat(a0_bits_var);
           //print("st_ino = " ^ BitStr(st_ino));
 
-          let _ = write_ram(Write_plain, a1_bits_var , 2, st_dev, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 2 , 2, st_ino, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 4 , 4, st_mode, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 8 , 2, st_nlink, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 10 , 2, st_uid, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 12 , 2, st_gid, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 14 , 2, st_rdev, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 16 , 8, st_s, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 24 , 8, st_atim_sec, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 32 , 8, st_atim_nsec, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 40 , 8, st_mtim_sec, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 48 , 8, st_mtim_nsec, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 56 , 8, st_ctim_sec, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 64 , 8, st_ctim_nsec, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 72 , 8, st_blk, ());
-          let _ = write_ram(Write_plain, a1_bits_var + 80 , 8, st_blocks, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var) , 2, st_dev, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 2) , 2, st_ino, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 4) , 4, st_mode, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 8) , 2, st_nlink, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 10) , 2, st_uid, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 12) , 2, st_gid, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 14) , 2, st_rdev, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 16) , 8, st_s, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 24) , 8, st_atim_sec, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 32) , 8, st_atim_nsec, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 40) , 8, st_mtim_sec, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 48) , 8, st_mtim_nsec, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 56) , 8, st_ctim_sec, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 64) , 8, st_ctim_nsec, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 72) , 8, st_blk, ());
+          let _ = write_ram(Write_plain, physaddr(a1_bits_var + 80) , 8, st_blocks, ());
 
-            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  ret, ());
+            let _ = write_ram(Write_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8,  ret, ());
 
         },
       /*=== sys_exit ===*/
@@ -616,12 +616,12 @@ function htif_store(physaddr(paddr), width, data) = {
         /*=== sys_times. ===*/
         168 => {
             let _ = plat_term_times();
-            let _ = write_ram(Write_plain, a0_bits_var , 8, tms_utime, ());
-            let _ = write_ram(Write_plain, a0_bits_var + 8, 8, zero_extend(0b0), ());
-            let _ = write_ram(Write_plain, a0_bits_var + 16, 8, zero_extend(0b0), ());
-            let _ = write_ram(Write_plain, a0_bits_var + 24, 8, zero_extend(0b0), ());
+            let _ = write_ram(Write_plain, physaddr(a0_bits_var) , 8, tms_utime, ());
+            let _ = write_ram(Write_plain, physaddr(a0_bits_var + 8), 8, zero_extend(0b0), ());
+            let _ = write_ram(Write_plain, physaddr(a0_bits_var + 16), 8, zero_extend(0b0), ());
+            let _ = write_ram(Write_plain, physaddr(a0_bits_var + 24), 8, zero_extend(0b0), ());
 
-            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  tms_utime, ());
+            let _ = write_ram(Write_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8,  tms_utime, ());
 
         },
         /*=== sys_utime ===*/
@@ -634,7 +634,7 @@ function htif_store(physaddr(paddr), width, data) = {
             var flag : bool = true;
             var i : int = 0;
             while flag & i<=31 do {
-              let temp_tuple = read_ram(Read_plain, a0_bits_var + (i * 8) , 8, false);
+              let temp_tuple = read_ram(Read_plain, physaddr(a0_bits_var + (i * 8)) , 8, false);
               let (char_bits_const, _) = temp_tuple;
               //print("string = " ^ BitStr(char_bits_const));
 
@@ -650,23 +650,23 @@ function htif_store(physaddr(paddr), width, data) = {
               i = i + 1;
             };
 
-            let temp_tuple = read_ram(Read_plain, a1_bits_var, 8, false);
+            let temp_tuple = read_ram(Read_plain, physaddr(a1_bits_var), 8, false);
             let (actime_bits, _) = temp_tuple;
-            let temp_tuple2 = read_ram(Read_plain, a1_bits_var + 8, 8, false);
+            let temp_tuple2 = read_ram(Read_plain, physaddr(a1_bits_var + 8), 8, false);
             let (modtime_bits, _) = temp_tuple2;
             //print("string = " ^ BitStr(char_bits_const));
 
             let ret = plat_term_utime(actime_bits, modtime_bits);
-            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  ret, ());
+            let _ = write_ram(Write_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8,  ret, ());
 
         },
         /*=== sys_gettimeofday. ===*/
         169 => {
             let _ = plat_term_gettimeofday();
-            let _ = write_ram(Write_plain, a0_bits_var , 8, tv_sec, ());
-            let _ = write_ram(Write_plain, a0_bits_var + 8 , 8, tv_usec, ());
+            let _ = write_ram(Write_plain, physaddr(a0_bits_var) , 8, tv_sec, ());
+            let _ = write_ram(Write_plain, physaddr(a0_bits_var + 8) , 8, tv_usec, ());
 
-            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  zero_extend(0b0), ());
+            let _ = write_ram(Write_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8,  zero_extend(0b0), ());
 
         },
 
@@ -680,7 +680,7 @@ function htif_store(physaddr(paddr), width, data) = {
             var flag : bool = true;
             var i : int = 0;
             while flag & i<=31 do {
-              let temp_tuple = read_ram(Read_plain, a0_bits_var + (i * 8) , 8, false);
+              let temp_tuple = read_ram(Read_plain, physaddr(a0_bits_var + (i * 8)) , 8, false);
               let (char_bits_const, _) = temp_tuple;
               //print("string = " ^ BitStr(char_bits_const));
 
@@ -695,7 +695,7 @@ function htif_store(physaddr(paddr), width, data) = {
               };             
               i = i + 1;
             };
-            let _ = write_ram(Write_plain, sail_zero_extend(cmd[payload], 64), 8,  plat_term_open(a1, a2), ());
+            let _ = write_ram(Write_plain, physaddr(sail_zero_extend(cmd[payload], 64)), 8,  plat_term_open(a1, a2), ());
 
         },
         /*=== sys_getmainvars ===*/
@@ -705,7 +705,7 @@ function htif_store(physaddr(paddr), width, data) = {
             var vec_word : vector(10, dec, int) = [0,0,0,0,0,0,0,0,0,0];
             var vec_addr : vector(10, dec, int) = [0,0,0,0,0,0,0,0,0,0];
 
-            let _ = write_ram(Write_plain, a0_bits_var, 8, bits_of_int(htif_argc), ());
+            let _ = write_ram(Write_plain, physaddr(a0_bits_var), 8, bits_of_int(htif_argc), ());
             //print_int("htif_argc=" , htif_argc);
             //print("htif_argc=" ^ BitStr(bits_of_int(htif_argc)));
 
@@ -742,7 +742,7 @@ function htif_store(physaddr(paddr), width, data) = {
               then { vec_addr[i] = count_word;
                       //print_int("vec_addr = ", vec_addr[i]);
 
-                      let _ = write_ram(Write_plain, a0_bits_var + (i+1)*8 , 8, a0_bits_var + bits_of_int(vec_addr[i]*8), ());
+                      let _ = write_ram(Write_plain, physaddr(a0_bits_var + (i+1)*8) , 8, a0_bits_var + bits_of_int(vec_addr[i]*8), ());
                       //print_int("a0_bits_var + " , (i+1)*8);
                       //print("a0_bits_var + " ^ BitStr(bits_of_int(vec_addr[i]*8)));
 
@@ -752,8 +752,8 @@ function htif_store(physaddr(paddr), width, data) = {
             //print("=================================================");
 
             //set null 
-            let _ = write_ram(Write_plain, a0_bits_var + (htif_argc+1)*8 , 8, zero_extend(0x0), ());
-            let _ = write_ram(Write_plain, a0_bits_var + (htif_argc+2)*8 , 8, zero_extend(0x0), ());
+            let _ = write_ram(Write_plain, physaddr(a0_bits_var + (htif_argc+1)*8) , 8, zero_extend(0x0), ());
+            let _ = write_ram(Write_plain, physaddr(a0_bits_var + (htif_argc+2)*8) , 8, zero_extend(0x0), ());
 
             //set argv char
 
@@ -781,7 +781,7 @@ function htif_store(physaddr(paddr), width, data) = {
                   //  print("append_str = " ^ BitStr(append_str));
                   };
 
-                  let _ = write_ram(Write_plain, a0_bits_var + (vec_addr[i] + j)*8, 8, append_str, ());
+                  let _ = write_ram(Write_plain, physaddr(a0_bits_var + (vec_addr[i] + j)*8), 8, append_str, ());
 
                 };
               }
@@ -819,7 +819,7 @@ function htif_store(physaddr(paddr), width, data) = {
     //print("fromhost = " ^ BitStr(a));
     reset_htif()
   };
-  let _ = write_ram(Write_plain, plat_htif_tohost()+8, 8, sign_extend(0b1), ());
+  let _ = write_ram(Write_plain, physaddr(plat_htif_tohost()+8), 8, sign_extend(0b1), ());
   /* for sysycall */
   MemValue(true)
 }
