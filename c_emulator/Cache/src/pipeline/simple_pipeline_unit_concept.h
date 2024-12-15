@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 
+
 template<typename DerivedT, typename DataT = Instruction>
 class SimplePipelineStageLogicMixIn {
 public:
@@ -26,13 +27,39 @@ protected:
     DataT *data;
 };
 
-template<typename DerivedT, typename PreviousStage, 
-         typename NextStage, typename DataT = Instruction>
-class SimplePipelineRegMixin {
+class NoStage {
+    public:
+    void flow_out() {}
+    void receive(void* data) {}
+};
+
+class Clockable {
+public:
+    virtual void clockTicked() = 0;
+};
+
+class Clock {
+public:
+    void tick() {
+        for (auto *clockable : clockableObjects)
+            clockable->clockTicked();
+    }
+    void registerClockable(Clockable* clockable) {
+        clockableObjects.push_back(clockable);
+    }
+private:
+    std::vector<Clockable *> clockableObjects;
+};
+
+template<typename DerivedT, typename PreviousStage = NoStage, 
+         typename NextStage = NoStage, typename DataT = Instruction>
+class SimplePipelineRegMixin : Clockable {
 public:    
-    SimplePipelineRegMixin(PreviousStage* prevStage, NextStage* nextStage)
+    SimplePipelineRegMixin(Clock &clk, PreviousStage *prevStage, NextStage *nextStage)
         : previous_stage(prevStage), next_stage(nextStage), 
-          data(nullptr), stallFlag(false) {}
+          data(nullptr), stallFlag(false) {
+        clk.registerClockable(static_cast<DerivedT&>(*this));
+    }
 
     void clockTicked() {
         // transmit data to next stage
@@ -45,19 +72,15 @@ public:
         static_cast<DerivedT&>(*this).transmit();
         static_cast<DerivedT&>(*this).accept();
     }
-    void stall() {
+    void receive_stall() {
         stallFlag = true;
     }
     // accept data from previous stage
     void accept() {
-        if (previous_stage == nullptr)
-            return;
-        Instruction *data = previous_stage->flow_out();
+        data = previous_stage->flow_out();
     }
     // transmit data to next stage
     void transmit() {
-        if(next_stage == nullptr)
-            return;
         next_stage->recieve(data);
     }
     void flush() {

@@ -2,30 +2,32 @@
 #include "simple_pipeline.h"
 
 SimplePipeline::SimplePipeline() :
+    cycle_counter(0),
+    // hazard_detection_unit
+    hazard_dectection_unit(&pc_reg, &if_id_reg),
     // cache
     icache(std::make_unique<Cache>()),
     dcache(std::make_unique<Cache>()),
     l2cache(std::make_unique<Cache>()),
     // pipeline stage
-    fetch(std::make_unique<Fetch>(icache.get())),
-    decode(std::make_unique<Decode>(&hazard_dectection_unit)),
-    execute(std::make_unique<Execute>(&hazard_dectection_unit)),
-    mem(std::make_unique<Mem>(dcache.get())), 
-    wb(std::make_unique<WB>()), 
+    mem(dcache.get()),
+    execute(&hazard_dectection_unit),
+    decode(&hazard_dectection_unit),
+    fetch(icache.get()),
     // pipeline reg
-    if_id_reg(fetch.get(), decode.get()),
-    id_ex_reg(decode.get(), execute.get()),
-    ex_mem_reg(execute.get(), mem.get()),
-    mem_wb_reg(mem.get(), wb.get()) {}
+    mem_wb_reg(clock, &mem, &wb),
+    ex_mem_reg(clock, &execute, &mem),
+    id_ex_reg(clock, &decode, &execute),
+    if_id_reg(clock, &fetch, &decode),
+    pc_reg(clock, &noStage, &fetch) {}
 
 void SimplePipeline::read_inst(Instruction *inst) {
-    fetch->recieve(inst);
-    // ...
+    while(pc_reg.isStalled()) {
+        clock.tick();
+    }
 }
 
 void SimplePipeline::clock_tick() {
-    mem_wb_reg.clockTicked();
-    ex_mem_reg.clockTicked();
-    id_ex_reg.clockTicked();
-    if_id_reg.clockTicked();
+    clock.tick();
+    ++cycle_counter;
 }
