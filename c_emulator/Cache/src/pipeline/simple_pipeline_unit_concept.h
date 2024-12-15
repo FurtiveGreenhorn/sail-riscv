@@ -18,10 +18,9 @@ public:
     }
     // data flow out to next pipeline register
     DataT *flow_out() {
-        return data;
-    }
-    void flush() {
+        DataT *data_out = data;
         data = nullptr;
+        return data_out;
     }
 protected:     
     DataT *data;
@@ -35,14 +34,17 @@ class NoStage {
 
 class Clockable {
 public:
-    virtual void clockTicked() = 0;
+    virtual void clock_start() = 0;
+    virtual void clock_end() = 0;
 };
 
 class Clock {
 public:
     void tick() {
         for (auto *clockable : clockableObjects)
-            clockable->clockTicked();
+            clockable->clock_start();
+        for (auto *clockable : clockableObjects)
+            clockable->clock_end();
     }
     void registerClockable(Clockable* clockable) {
         clockableObjects.push_back(clockable);
@@ -60,8 +62,7 @@ public:
           data(nullptr), stallFlag(false) {
         clk.registerClockable(static_cast<DerivedT&>(*this));
     }
-
-    void clockTicked() {
+    void clock_start() {
         // transmit data to next stage
         if (stallFlag == true) {
             stallFlag = false;
@@ -70,6 +71,10 @@ public:
         // Supports read and write enables for 
         // controlling data transfer, with customizable behavior
         static_cast<DerivedT&>(*this).transmit();
+    }
+    void clock_end() {
+        // Supports read and write enables for 
+        // controlling data transfer, with customizable behavior
         static_cast<DerivedT&>(*this).accept();
     }
     void receive_stall() {
@@ -77,16 +82,14 @@ public:
     }
     // accept data from previous stage
     void accept() {
-        data = previous_stage->flow_out();
+        if (DataT *data_in = previous_stage->flow_out(); data_in != nullptr)
+            data = data_in;
     }
     // transmit data to next stage
     void transmit() {
         next_stage->recieve(data);
     }
-    void flush() {
-        data = nullptr;
-    }
-
+    
 protected:
     PreviousStage *previous_stage;
     NextStage *next_stage;

@@ -10,16 +10,16 @@ SimplePipeline::SimplePipeline() :
     dcache(std::make_unique<Cache>()),
     l2cache(std::make_unique<Cache>()),
     // pipeline stage
-    mem(dcache.get()),
-    execute(&hazard_dectection_unit),
-    decode(&hazard_dectection_unit),
     fetch(icache.get()),
+    decode(&hazard_dectection_unit),
+    execute(&hazard_dectection_unit),
+    mem(dcache.get()),
     // pipeline reg
-    mem_wb_reg(clock, &mem, &wb),
-    ex_mem_reg(clock, &execute, &mem),
-    id_ex_reg(clock, &decode, &execute),
+    pc_reg(clock, &noStage, &fetch),
     if_id_reg(clock, &fetch, &decode),
-    pc_reg(clock, &noStage, &fetch) {}
+    id_ex_reg(clock, &decode, &execute),
+    ex_mem_reg(clock, &execute, &mem),
+    mem_wb_reg(clock, &mem, &wb) {}
 
 void SimplePipeline::read_inst(Instruction *inst) {
     while(pc_reg.isStalled()) {

@@ -7,6 +7,7 @@ class Cache {};
 class Fetch;
 class PCReg;
 class IfIdReg;
+class IdExReg;
 
 class HazardDetectionUnit {
 public:
@@ -20,6 +21,7 @@ private:
     RegNum IdExRegRd;
     PCReg *pc_reg;
     IfIdReg *if_id_reg;
+    IdExReg *id_ex_reg;
 
     void send_stall_for_load_use_hazard();
 };
@@ -66,18 +68,6 @@ private:
 
 class WB : public SimplePipelineStageLogicMixIn<WB> {};
 
-// #define PIPELINE_REG_CLASS(RegClass, PrevStage, NextStage)           \
-// class RegClass : public SimplePipelineRegMixin<RegClass, PrevStage, NextStage> {  \
-// public:                                                               \
-//     RegClass(Clock &clk, PrevStage* prev, NextStage* next)                        \
-//         : SimplePipelineRegMixin(clk, prev, next) {} \
-// };
-
-// PIPELINE_REG_CLASS(IfIdReg, Fetch, Decode)
-// PIPELINE_REG_CLASS(IdExReg, Decode, Execute)
-// PIPELINE_REG_CLASS(ExMemReg, Execute, Mem)
-// PIPELINE_REG_CLASS(MemWbReg, Mem, WB)
-
 class PCReg : public SimplePipelineRegMixin<PCReg, NoStage, Fetch> {
 public:
     PCReg(Clock &clk, NoStage *noStage, Fetch *fetch)
@@ -99,6 +89,10 @@ class IdExReg : public SimplePipelineRegMixin<IdExReg, Decode, Execute> {
 public:
     IdExReg(Clock &clk, Decode *decode, Execute *execute)
         : SimplePipelineRegMixin(clk, decode, execute) {}
+    
+    void flush() {
+        data->set_bubble();
+    }
 };
 class ExMemReg : public SimplePipelineRegMixin<ExMemReg, Execute, Mem> {
 public:
@@ -114,6 +108,8 @@ public:
 // HazardDetectionUnit function implementation
 inline void HazardDetectionUnit::send_stall_for_load_use_hazard() {
     pc_reg->receive_stall();
+    if_id_reg->receive_stall();
+    id_ex_reg->flush();
 }
 
 inline void HazardDetectionUnit::active_load_use_hazard_detect(RegNum rd) {

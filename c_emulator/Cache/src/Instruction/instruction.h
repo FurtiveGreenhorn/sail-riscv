@@ -32,6 +32,9 @@ struct Instruction {
     void set_addr(uint64_t new_addr) {
         addr = new_addr;
     }
+    void set_rs(RegNum new_rs1, RegNum new_rs2) {
+        rs1 = new_rs1;
+    }
     void set_rs1(RegNum new_rs1) {
         rs1 = new_rs1;
     }
@@ -43,6 +46,9 @@ struct Instruction {
     } 
     void set_taken(bool new_taken) {
         taken = new_taken;
+    }
+    void set_bubble() {
+        type = INST_nop;
     }
 
     bool is_load() {
