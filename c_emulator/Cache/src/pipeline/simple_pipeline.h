@@ -20,7 +20,7 @@ private:
     Decode decode;
     Execute execute;
     Mem mem;
-    WB wb;
+    Wb wb;
     // pipeline reg
     PCReg pc_reg;
     IfIdReg if_id_reg;

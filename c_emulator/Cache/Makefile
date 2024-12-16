@@ -1,6 +1,6 @@
 # 編譯器設定
 CXX       := g++
-CXXFLAGS  := -O2 -Wall -I./src
+CXXFLAGS  := -g -O2 -Wall -I./src
 MAKELIB = ar crs $@
 
 # 原始碼與物件檔目錄設定

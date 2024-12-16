@@ -324,8 +324,10 @@ function check_misaligned(vaddr : virtaddr, width : word_width) -> bool =
 
 function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
   // for pipeline
-  read_rs1(rs1);
+  createInstrForStageInfo();
+  read_type(INST_ld);
   read_rd(rd);
+  sendInstToPipeline();
   let offset : xlenbits = sign_extend(imm);
   let width_bytes = size_bytes(width);
 
@@ -344,7 +346,8 @@ function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
         TR_Address(paddr, _) =>
 
           match mem_read(Read(Data), paddr, width_bytes, aq, rl, false) {
-            MemValue(result) => { 
+            MemValue(result) => {
+              read_addr(physaddr_bits(paddr));
               dc_read(physaddr_bits(paddr));
               X(rd) = extend_value(is_unsigned, result); RETIRE_SUCCESS 
             },

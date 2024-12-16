@@ -35,11 +35,6 @@ unit read_rs1(mach_bits rs1) {
     return UNIT;
 }
 
-unit read_rs2(mach_bits rs2) {
-    stageInfoInstruction->set_rs2(rs2);
-    return UNIT;
-}
-
 unit read_rd(mach_bits rd) {
     stageInfoInstruction->set_rs1(rd);
     return UNIT;

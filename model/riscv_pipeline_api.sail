@@ -25,6 +25,5 @@ val read_addr = pure {c: "read_addr"} : xlenbits -> unit
 val read_type = pure {c: "read_type"} : instruction_type -> unit
 val read_rs = pure {c: "read_rs"} : (bits(5), bits(5)) -> unit
 val read_rs1 = pure {c: "read_rs1"} : bits(5) -> unit
-val read_rs2 = pure {c: "read_rs2"} : bits(5) -> unit
 val read_rd = pure {c: "read_rd"} : bits(5) -> unit
 val read_taken = pure {c: "read_taken"} : bool -> unit

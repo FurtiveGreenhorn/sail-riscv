@@ -3,7 +3,7 @@
 
 SimplePipeline::SimplePipeline() :
     // hazard_detection_unit
-    hazard_dectection_unit(&pc_reg, &if_id_reg),
+    hazard_dectection_unit(&pc_reg, &if_id_reg, &id_ex_reg),
     // cache
     icache(std::make_unique<Cache>()),
     dcache(std::make_unique<Cache>()),
@@ -22,7 +22,7 @@ SimplePipeline::SimplePipeline() :
     mem_wb_reg(clock, &mem, &wb) {}
 
 void SimplePipeline::read_inst(Instruction *inst) {
-    pc_reg.recieve(inst);
+    pc_reg.receive(inst);
     clock.tick();
     // Ensure the previous PC is consumed 
     // before reading the next instruction
