@@ -14,4 +14,4 @@
 
 #pragma once
 #include "src/main_cache/riscv_cpp_test.h"
-#include "src/Instruction/instruction_api.h"
+#include "src/pipeline/simple_pipeline_api.h"

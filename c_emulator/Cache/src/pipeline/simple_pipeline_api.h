@@ -11,6 +11,8 @@ extern "C" {
 
 unit createInstrForStageInfo();
 
+unit sendInstToPipeline();
+
 unit set_rs(mach_bits rs1, mach_bits rs2);
 
 unit set_rs1(mach_bits rs1);

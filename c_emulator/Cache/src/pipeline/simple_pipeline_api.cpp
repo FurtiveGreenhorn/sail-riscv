@@ -1,4 +1,5 @@
 #include "simple_pipeline.h"
+#include "simple_pipeline_api.h"
 #include "sail.h"
 
 static SimplePipeline simplePipeline;
@@ -6,6 +7,11 @@ static Instruction *stageInfoInstruction;
 
 unit createInstrForStageInfo() {
     stageInfoInstruction = simplePipeline.create_inst();
+    return UNIT;
+}
+
+unit sendInstToPipeline() {
+    simplePipeline.read_inst(stageInfoInstruction);
     return UNIT;
 }
 
