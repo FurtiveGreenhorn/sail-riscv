@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../Instruction/instruction.h"
 #include <memory>
 #include <vector>
@@ -24,12 +26,6 @@ public:
     }
 protected:     
     DataT *data;
-};
-
-class NoStage {
-    public:
-    void flow_out() {}
-    void receive(void* data) {}
 };
 
 class Clockable {
@@ -59,14 +55,17 @@ private:
     unsigned cycle_counter;
 };
 
+
+class NoStage : public SimplePipelineStageLogicMixIn<NoStage> {};
+
 template<typename DerivedT, typename PreviousStage = NoStage, 
          typename NextStage = NoStage, typename DataT = Instruction>
-class SimplePipelineRegMixin : Clockable {
+class SimplePipelineRegMixin : public Clockable {
 public:    
     SimplePipelineRegMixin(Clock &clk, PreviousStage *prevStage, NextStage *nextStage)
         : previous_stage(prevStage), next_stage(nextStage), 
           data(nullptr), stallFlag(false) {
-        clk.registerClockable(static_cast<DerivedT&>(*this));
+        clk.registerClockable(static_cast<DerivedT*>(this));
     }
     void clock_start() {
         // transmit data to next stage

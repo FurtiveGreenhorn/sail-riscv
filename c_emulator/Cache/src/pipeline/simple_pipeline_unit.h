@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../Instruction/instruction_pool.h"
 #include "../Instruction/instruction.h"
 #include "simple_pipeline_unit_concept.h"
@@ -31,6 +33,7 @@ private:
 class Fetch : public SimplePipelineStageLogicMixIn<Fetch> {
 public:
     Fetch(Cache *ic) : icache(ic) {}
+
     void process_stage() {
         // ToDo: access cache and send signal to control unit if missed
     }
@@ -40,6 +43,7 @@ private:
 class Decode : public SimplePipelineStageLogicMixIn<Decode> {
 public:
     Decode(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {}
+
     void process_stage() {
         // send rs
         hazard_detection_unit->
@@ -51,6 +55,7 @@ private:
 class Execute: public SimplePipelineStageLogicMixIn<Execute> {
 public:
     Execute(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {}
+
     void process_stage() {
         if (data->is_load())
             hazard_detection_unit->
@@ -62,6 +67,7 @@ private:
 class Mem : public SimplePipelineStageLogicMixIn<Mem> {
 public:
     Mem(Cache *dc) : dcache(dc) {}
+
     void process_stage() {
         // ToDo: access cache and send signal to control unit if missed
     }
@@ -69,13 +75,23 @@ private:
     Cache *dcache;
 };
 
-class WB : public SimplePipelineStageLogicMixIn<WB> {};
+class WB : public SimplePipelineStageLogicMixIn<WB> {
+public:
+    WB(Instruction_pool<INST_POOL_SIZE> *inst_pool)
+        : inst_pool(inst_pool) {}
+    
+    void process_stage() {
+        inst_pool->freeInst();
+    }
+private:
+    Instruction_pool<INST_POOL_SIZE> *inst_pool;
+};
 
 class PCReg : public SimplePipelineRegMixin<PCReg, NoStage, Fetch> {
 public:
     PCReg(Clock &clk, NoStage *noStage, Fetch *fetch)
         : SimplePipelineRegMixin(clk, noStage, fetch) {}
-    void accept(Instruction *new_pc) {
+    void recieve(Instruction *new_pc) {
         data = new_pc;
     }
     // Check if the stage is stalled
@@ -126,8 +142,7 @@ inline void HazardDetectionUnit::send_stall_for_load_use_hazard() {
 
 inline bool HazardDetectionUnit::detect_load_use_hazard() {
     return IdExMemRead && 
-           (IdExRegRd == IfIdRegRs1) || 
-           (IdExRegRd == IfIdRegRs2);
+           ((IdExRegRd == IfIdRegRs1) || (IdExRegRd == IfIdRegRs2));
 }
 
 inline void HazardDetectionUnit::recieve_IdEx_rd(RegNum rd) {

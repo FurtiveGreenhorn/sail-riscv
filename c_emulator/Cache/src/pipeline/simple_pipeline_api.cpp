@@ -1,8 +1,35 @@
 #include "simple_pipeline.h"
+#include "sail.h"
 
-unit show_instructions(mach_bits rs1, mach_bits rs2, mach_bits rd) {
-    show_instruction(rs1, rs2, rd);
+static SimplePipeline simplePipeline;
+static Instruction *stageInfoInstruction;
+
+unit createInstrForStageInfo() {
+    stageInfoInstruction = simplePipeline.create_inst();
     return UNIT;
 }
 
-static SimplePipeline simplePipeline;
+unit set_rs(mach_bits rs1, mach_bits rs2) {
+    stageInfoInstruction->set_rs(rs1, rs2);
+    return UNIT;
+}
+
+unit set_rs1(mach_bits rs1) {
+    stageInfoInstruction->set_rs1(rs1);
+    return UNIT;
+}
+
+unit set_rs2(mach_bits rs2) {
+    stageInfoInstruction->set_rs2(rs2);
+    return UNIT;
+}
+
+unit set_rd(mach_bits rd) {
+    stageInfoInstruction->set_rs1(rd);
+    return UNIT;
+}
+
+unit set_taken(bool taken) {
+    stageInfoInstruction->set_taken(taken);
+    return UNIT;
+}

@@ -9,7 +9,17 @@
 extern "C" {
 #endif
 
-unit show_instructions(mach_bits rs1, mach_bits rs2, mach_bits rd);
+unit createInstrForStageInfo();
+
+unit set_rs(mach_bits rs1, mach_bits rs2);
+
+unit set_rs1(mach_bits rs1);
+
+unit set_rs2(mach_bits rs2);
+
+unit set_rd(mach_bits rd);
+
+unit set_taken(bool taken);
 
 #ifdef __cplusplus
 }
