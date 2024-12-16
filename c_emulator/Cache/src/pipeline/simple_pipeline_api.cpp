@@ -15,27 +15,37 @@ unit sendInstToPipeline() {
     return UNIT;
 }
 
-unit set_rs(mach_bits rs1, mach_bits rs2) {
+unit read_addr(uint64_t addr) {
+    stageInfoInstruction->set_addr(addr);
+    return UNIT;
+}
+
+unit read_type(const int type) {
+    stageInfoInstruction->set_type(Instruction_type(type));
+    return UNIT;
+}
+
+unit read_rs(mach_bits rs1, mach_bits rs2) {
     stageInfoInstruction->set_rs(rs1, rs2);
     return UNIT;
 }
 
-unit set_rs1(mach_bits rs1) {
+unit read_rs1(mach_bits rs1) {
     stageInfoInstruction->set_rs1(rs1);
     return UNIT;
 }
 
-unit set_rs2(mach_bits rs2) {
+unit read_rs2(mach_bits rs2) {
     stageInfoInstruction->set_rs2(rs2);
     return UNIT;
 }
 
-unit set_rd(mach_bits rd) {
+unit read_rd(mach_bits rd) {
     stageInfoInstruction->set_rs1(rd);
     return UNIT;
 }
 
-unit set_taken(bool taken) {
+unit read_taken(bool taken) {
     stageInfoInstruction->set_taken(taken);
     return UNIT;
 }

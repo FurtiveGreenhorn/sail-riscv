@@ -32,6 +32,9 @@ struct Instruction {
     void set_addr(uint64_t new_addr) {
         addr = new_addr;
     }
+    void set_type(Instruction_type new_type) {
+        new_type = type;
+    }
     void set_rs(RegNum new_rs1, RegNum new_rs2) {
         rs1 = new_rs1;
     }

@@ -323,6 +323,9 @@ function check_misaligned(vaddr : virtaddr, width : word_width) -> bool =
   not(plat_enable_misaligned_access()) & not(is_aligned(virtaddr_bits(vaddr), width))
 
 function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
+  // for pipeline
+  read_rs1(rs1);
+  read_rd(rd);
   let offset : xlenbits = sign_extend(imm);
   let width_bytes = size_bytes(width);
 

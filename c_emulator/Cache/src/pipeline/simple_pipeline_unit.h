@@ -3,6 +3,7 @@
 #include "../Instruction/instruction_pool.h"
 #include "../Instruction/instruction.h"
 #include "simple_pipeline_unit_concept.h"
+#include <iostream>
 
 class Cache {};
 
@@ -19,7 +20,7 @@ public:
     void recieve_IfId_rs(RegNum rs1, RegNum rs2);
     
 private:
-    bool IdExMemRead = false;
+    bool load_use_detection_ready = false;
     RegNum IdExRegRd, IfIdRegRs1, IfIdRegRs2;
     PCReg *pc_reg;
     IfIdReg *if_id_reg;
@@ -81,6 +82,7 @@ public:
         : inst_pool(inst_pool) {}
     
     void process_stage() {
+        std::cout << "free inst" << std::endl;
         inst_pool->freeInst();
     }
 private:
@@ -131,7 +133,7 @@ public:
 inline void HazardDetectionUnit::handle_load_use_hazard() {
     if (detect_load_use_hazard() == true)
         send_stall_for_load_use_hazard();
-    IdExMemRead = false;
+    load_use_detection_ready = false;
 }
 
 inline void HazardDetectionUnit::send_stall_for_load_use_hazard() {
@@ -141,18 +143,22 @@ inline void HazardDetectionUnit::send_stall_for_load_use_hazard() {
 }
 
 inline bool HazardDetectionUnit::detect_load_use_hazard() {
-    return IdExMemRead && 
-           ((IdExRegRd == IfIdRegRs1) || (IdExRegRd == IfIdRegRs2));
+    return (IdExRegRd == IfIdRegRs1) || (IdExRegRd == IfIdRegRs2);
 }
 
 inline void HazardDetectionUnit::recieve_IdEx_rd(RegNum rd) {
-    IdExMemRead = true;
     IdExRegRd = rd;
-    handle_load_use_hazard();
+    if (load_use_detection_ready)
+        handle_load_use_hazard();
+    else
+        load_use_detection_ready = true;
 }
 
 inline void HazardDetectionUnit::recieve_IfId_rs(RegNum rs1, RegNum rs2) {
     IfIdRegRs1 = rs1;
     IfIdRegRs2 = rs2;
-    handle_load_use_hazard();
+    if (load_use_detection_ready)
+        handle_load_use_hazard();
+    else
+        load_use_detection_ready = true;
 }
