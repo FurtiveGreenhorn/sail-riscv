@@ -3,7 +3,7 @@
 #include "instruction.h"
 #include <cassert>
 
-#define INST_POOL_SIZE 5
+#define INST_POOL_SIZE 10
 
 template<auto size>
 class Instruction_pool {

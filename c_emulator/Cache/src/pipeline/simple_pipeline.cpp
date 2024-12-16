@@ -2,7 +2,6 @@
 #include "simple_pipeline.h"
 
 SimplePipeline::SimplePipeline() :
-    cycle_counter(0),
     // hazard_detection_unit
     hazard_dectection_unit(&pc_reg, &if_id_reg),
     // cache
@@ -22,12 +21,10 @@ SimplePipeline::SimplePipeline() :
     mem_wb_reg(clock, &mem, &wb) {}
 
 void SimplePipeline::read_inst(Instruction *inst) {
-    while(pc_reg.isStalled()) {
-        clock.tick();
-    }
-}
-
-void SimplePipeline::clock_tick() {
+    pc_reg.accept(inst);
     clock.tick();
-    ++cycle_counter;
+    // Ensure the previous PC is consumed 
+    // before reading the next instruction
+    while(pc_reg.isStalled())
+        clock.tick();
 }

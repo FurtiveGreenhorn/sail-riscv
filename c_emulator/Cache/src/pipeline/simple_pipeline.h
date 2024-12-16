@@ -9,7 +9,6 @@ public:
 
 private:
     Clock clock;
-    unsigned cycle_counter;
     HazardDetectionUnit hazard_dectection_unit;
     std::unique_ptr<Cache> icache, dcache, l2cache;
     // pipeline stage

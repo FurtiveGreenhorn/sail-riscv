@@ -13,17 +13,19 @@ class HazardDetectionUnit {
 public:
     HazardDetectionUnit(PCReg *pc_reg, IfIdReg *ifid) 
         : pc_reg(pc_reg), if_id_reg(ifid) {}
-    void active_load_use_hazard_detect(RegNum rd);
-    void load_use_hazard_detect(RegNum IfIdRegRs1, RegNum IfIdRegRs2);
+    void recieve_IdEx_rd(RegNum rd);
+    void recieve_IfId_rs(RegNum rs1, RegNum rs2);
     
 private:
     bool IdExMemRead = false;
-    RegNum IdExRegRd;
+    RegNum IdExRegRd, IfIdRegRs1, IfIdRegRs2;
     PCReg *pc_reg;
     IfIdReg *if_id_reg;
     IdExReg *id_ex_reg;
 
+    bool detect_load_use_hazard();
     void send_stall_for_load_use_hazard();
+    void handle_load_use_hazard();
 };
 
 class Fetch : public SimplePipelineStageLogicMixIn<Fetch> {
@@ -39,8 +41,9 @@ class Decode : public SimplePipelineStageLogicMixIn<Decode> {
 public:
     Decode(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {}
     void process_stage() {
+        // send rs
         hazard_detection_unit->
-            load_use_hazard_detect(data->rs1, data->rs2);
+            recieve_IfId_rs(data->rs1, data->rs2);
     }
 private:
     HazardDetectionUnit *hazard_detection_unit;
@@ -51,7 +54,7 @@ public:
     void process_stage() {
         if (data->is_load())
             hazard_detection_unit->
-                active_load_use_hazard_detect(data->rd);
+                recieve_IdEx_rd(data->rd);
     }
 private:
     HazardDetectionUnit *hazard_detection_unit;
@@ -72,6 +75,9 @@ class PCReg : public SimplePipelineRegMixin<PCReg, NoStage, Fetch> {
 public:
     PCReg(Clock &clk, NoStage *noStage, Fetch *fetch)
         : SimplePipelineRegMixin(clk, noStage, fetch) {}
+    void accept(Instruction *new_pc) {
+        data = new_pc;
+    }
     // Check if the stage is stalled
     // This method is designed to synchronize with the Sail frontend clock.
     // When the Sail simulator ticks, we must ensure that the current stage is not stalled,
@@ -106,19 +112,32 @@ public:
 };
 
 // HazardDetectionUnit function implementation
+inline void HazardDetectionUnit::handle_load_use_hazard() {
+    if (detect_load_use_hazard() == true)
+        send_stall_for_load_use_hazard();
+    IdExMemRead = false;
+}
+
 inline void HazardDetectionUnit::send_stall_for_load_use_hazard() {
     pc_reg->receive_stall();
     if_id_reg->receive_stall();
     id_ex_reg->flush();
 }
 
-inline void HazardDetectionUnit::active_load_use_hazard_detect(RegNum rd) {
+inline bool HazardDetectionUnit::detect_load_use_hazard() {
+    return IdExMemRead && 
+           (IdExRegRd == IfIdRegRs1) || 
+           (IdExRegRd == IfIdRegRs2);
+}
+
+inline void HazardDetectionUnit::recieve_IdEx_rd(RegNum rd) {
     IdExMemRead = true;
     IdExRegRd = rd;
+    handle_load_use_hazard();
 }
-inline void HazardDetectionUnit::load_use_hazard_detect(RegNum IfIdRegRs1, RegNum IfIdRegRs2) {
-    if (IdExRegRd != IfIdRegRs1 && IdExRegRd != IfIdRegRs2)
-        return;
-    IdExMemRead = false;
-    send_stall_for_load_use_hazard();
+
+inline void HazardDetectionUnit::recieve_IfId_rs(RegNum rs1, RegNum rs2) {
+    IfIdRegRs1 = rs1;
+    IfIdRegRs2 = rs2;
+    handle_load_use_hazard();
 }

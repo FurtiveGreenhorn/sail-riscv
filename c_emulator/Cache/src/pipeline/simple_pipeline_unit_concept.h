@@ -40,17 +40,23 @@ public:
 
 class Clock {
 public:
+    Clock() : cycle_counter(0) {}
     void tick() {
         for (auto *clockable : clockableObjects)
             clockable->clock_start();
         for (auto *clockable : clockableObjects)
             clockable->clock_end();
+        ++cycle_counter;
     }
     void registerClockable(Clockable* clockable) {
         clockableObjects.push_back(clockable);
     }
+    unsigned get_cycle_count() {
+        return cycle_counter;
+    }
 private:
     std::vector<Clockable *> clockableObjects;
+    unsigned cycle_counter;
 };
 
 template<typename DerivedT, typename PreviousStage = NoStage, 
