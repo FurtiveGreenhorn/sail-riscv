@@ -4,24 +4,23 @@
 #include <memory>
 #include <vector>
 #include <iostream>
-
+#include <string>
+#include <cassert>
 
 template<typename DerivedT, typename DataT = Instruction>
 class SimplePipelineStageLogicMixIn {
 public:
-    SimplePipelineStageLogicMixIn() : data(nullptr) {
-        if(logged) {
-            std::cout << "stage created!" << std::endl;
-        }
-    }
+    SimplePipelineStageLogicMixIn() : data(nullptr) {}
     // receive data from previous pipeline register
     void receive(Instruction *input_data) {
-        if(logged) {
-            static_cast<DerivedT&>(*this).print_name();
-            std::cout << " receive !" << std::endl;
-        }
+        assert(input_data != nullptr);
+        assert(input_data->is_used == true);
         data = input_data;
-        static_cast<DerivedT&>(*this).process_stage();
+        if(logged) {
+            std::cout << name << " received " 
+                      << (data->is_bubble() ? "a bubble" : "data")
+                      << " !" << std::endl;
+        }
     }   
     // default implementation of process_stage
     void process_stage() {
@@ -29,17 +28,37 @@ public:
     }
     // data flow out to next pipeline register
     DataT *flow_out() {
+        if (data == nullptr) {
+            if(logged) {
+                std::cout << "No data flowed out from "
+                          << name << " !" << std::endl;
+            }
+            return nullptr;
+        }
+        
         if(logged) {
-            static_cast<DerivedT&>(*this).print_name();
-            std::cout << " flow out !" << std::endl;
+            std::cout << name 
+                << " is processing !" << std::endl;
+        }        
+        static_cast<DerivedT&>(*this).process_stage();
+        
+        if(logged) {
+            std::cout << (data->is_bubble() ? "Bubble" : "data")
+                      << " flowed out from "
+                      << name << " !" << std::endl;
         }
         DataT *data_out = data;
         data = nullptr;
         return data_out;
     }
+
+    const std::string& get_name() {
+        return name;
+    }
 protected:     
     DataT *data;
-    bool logged = false;
+    std::string name;
+    bool logged = true;
 };
 
 class Clockable {
@@ -51,9 +70,15 @@ public:
 class Clock {
 public:
     Clock() : cycle_counter(0) {}
-    void tick() {
+    void tick() { 
+        if(logged) {
+            std::cout << "Clock start!" << std::endl;
+        }
         for (auto *clockable : clockableObjects)
             clockable->clock_start();
+        if(logged) {
+            std::cout << "Clock end!" << std::endl;
+        }
         for (auto *clockable : clockableObjects)
             clockable->clock_end();
         ++cycle_counter;
@@ -67,15 +92,11 @@ public:
 private:
     std::vector<Clockable *> clockableObjects;
     unsigned cycle_counter;
+    bool logged = false;
 };
 
 
-class NoStage : public SimplePipelineStageLogicMixIn<NoStage> {
-public:
-    void print_name() {
-        std::cout << "NoStage";
-    }
-};
+class NoStage : public SimplePipelineStageLogicMixIn<NoStage> { };
 
 template<typename DerivedT, typename PreviousStage = NoStage, 
          typename NextStage = NoStage, typename DataT = Instruction>
@@ -85,16 +106,13 @@ public:
         : previous_stage(prevStage), next_stage(nextStage), 
           data(nullptr), stallFlag(false) {
         clk.registerClockable(static_cast<DerivedT*>(this));
-        if(logged) {
-            std::cout << "pipeline register created!" << std::endl;
-        }
     }
     void clock_start() override {
-        if(logged) {
-            std::cout << "clock start!" << std::endl;
-        }
         // transmit data to next stage
         if (stallFlag == true) {
+            if (logged) {
+                std::cout << name << " is stalled !" << std::endl;
+            }
             stallFlag = false;
             return;
         }
@@ -103,34 +121,53 @@ public:
         static_cast<DerivedT&>(*this).transmit();
     }
     void clock_end() override {
-        if(logged) {
-            std::cout << "clock end!" << std::endl;
-        }
         // Supports read and write enables for 
         // controlling data transfer, with customizable behavior
         static_cast<DerivedT&>(*this).accept();
     }
     void receive_stall() {
+        if (logged) {
+            std::cout << name << " received a stall signal !" << std::endl;
+        }
         stallFlag = true;
     }
 
     // accept(): accept data from previous stage
     void accept() {
-        if(logged) {
-            static_cast<DerivedT&>(*this).print_name();
-            std::cout << " accept !" << std::endl;
+        DataT *data_in = previous_stage->flow_out();
+        if (data_in == nullptr) {
+            if (logged) {
+                std::cout << name 
+                        << " did not accepted data from " 
+                        << previous_stage->get_name() << std::endl;
+            }
+            return;
         }
-        if (DataT *data_in = previous_stage->flow_out(); data_in != nullptr)
-            data = data_in;
+        assert(data_in->is_used == true);
+        data = data_in;
+        if (logged) {
+            std::cout << name 
+                      << " accepted "
+                      << (data->is_bubble() ? "a bubble " : "data ")
+                      << "from " 
+                      << previous_stage->get_name() << std::endl;
+        }        
     }
     // transmit(): transmit data to next stage
     void transmit() {
-        if(logged) {
-            static_cast<DerivedT&>(*this).print_name();
-            std::cout << " transmit !" << std::endl;
+        if (data == nullptr) {
+            if(logged) {
+                std::cout << name 
+                          << " has no data to transmited to " 
+                          << next_stage->get_name() << " !" << std::endl;
+            }
+            return;
         }
-        if (data != nullptr)
-            next_stage->receive(data);
+        next_stage->receive(data);
+        if(logged) {
+            std::cout << name << " transmited data to " 
+                      << next_stage->get_name() << " !" << std::endl;
+        }
     }
     
 protected:
@@ -138,5 +175,6 @@ protected:
     NextStage *next_stage;
     DataT *data = nullptr;
     bool stallFlag = false;
+    std::string name;
     bool logged = false;
 };

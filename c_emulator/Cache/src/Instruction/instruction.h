@@ -19,10 +19,12 @@ enum Instruction_type : unsigned {
     INST_lb, INST_lbu, INST_lh, INST_lhu,INST_lw, INST_lwu, INST_ld, 
     INST_sb, INST_sh, INST_sw, INST_sd,
     INST_fence, INST_ebreak, INST_ecall,
-    INST_csrrc, INST_csrrci, INST_csrrs, INST_csrrsi, INST_csrrw, INST_csrrwi
+    INST_csrrc, INST_csrrci, INST_csrrs, INST_csrrsi, INST_csrrw, INST_csrrwi,
+    INST_privilege
 };
 
 using RegNum = unsigned;
+constexpr unsigned REGISTER_NOT_USED = 2333333333;
 struct Instruction {
     uint64_t addr;
     Instruction_type type;
@@ -32,25 +34,48 @@ struct Instruction {
     void set_addr(uint64_t new_addr) {
         addr = new_addr;
     }
-    void set_type(Instruction_type new_type) {
-        new_type = type;
-    }
-    void set_rs(RegNum new_rs1, RegNum new_rs2) {
+    void set_Rtype(RegNum new_rs1, RegNum new_rs2, RegNum new_rd) {
         rs1 = new_rs1;
         rs2 = new_rs2;
-    }
-    void set_rs1(RegNum new_rs1) {
-        rs1 = new_rs1;
-        rs2 = -1;
-    }
-    void set_rd(RegNum new_rd) {
         rd = new_rd;
-    } 
+    }
+    void set_Itype(RegNum new_rs1, RegNum new_rd) {
+        rs1 = new_rs1;
+        rs2 = REGISTER_NOT_USED;
+        rd = new_rd;
+    }  
+    void set_SBtype(RegNum new_rs1, RegNum new_rs2) {
+        rs1 = new_rs1;
+        rs2 = new_rs2;
+        rd = REGISTER_NOT_USED;
+    }
+    void set_UJtype(RegNum new_rd) {
+        rs1 = REGISTER_NOT_USED;
+        rs2 = REGISTER_NOT_USED;
+        rd = new_rd;
+    }   
+    void set_type(Instruction_type new_type) {
+        type = new_type;
+    }
+    // void set_rs(RegNum new_rs1, RegNum new_rs2) {
+    //     rs1 = new_rs1;
+    //     rs2 = new_rs2;
+    // }
+    // void set_rs1(RegNum new_rs1) {
+    //     rs1 = new_rs1;
+    //     rs2 = -1;
+    // }
+    // void set_rd(RegNum new_rd) {
+    //     rd = new_rd;
+    // } 
     void set_taken(bool new_taken) {
         taken = new_taken;
     }
     void set_bubble() {
         type = INST_nop;
+    }
+    bool is_bubble() {
+        return (type == INST_nop);
     }
 
     bool is_load() {
@@ -63,6 +88,21 @@ struct Instruction {
         return (type == INST_jal) || (type == INST_jalr);
     }
 
+    bool rs_used() {
+        if (type == INST_privilege)
+            return false;
+        return rs1 != REGISTER_NOT_USED;
+    }
+    bool rs2_used() {
+        if (type == INST_privilege)
+            return false;
+        return rs2 != REGISTER_NOT_USED;
+    }
+    bool rd_used() {
+        if (type == INST_privilege)
+            return false;
+        return rd != REGISTER_NOT_USED;
+    }
     // int rs_usage(Instruction_type inst_type);
 };
 

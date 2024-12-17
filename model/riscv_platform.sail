@@ -803,9 +803,9 @@ function htif_store(physaddr(paddr), width, data) = {
     if cmd[payload][0] == bitone
     then {
         /* cache */
-        print_ic_stats();
-        print_dc_stats();
-        print_l2_stats();
+        // print_ic_stats();
+        // print_dc_stats();
+        // print_l2_stats();
         /* cache */
 
         htif_done = true;

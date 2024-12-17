@@ -9,6 +9,10 @@
 /* The definition for the memory model. */
 
 function clause execute (RISCV_JALR(imm, rs1, rd)) = {
+  // for pipeline
+  read_Itype(rs1, rd);
+  read_type(INST_jalr);
+  // for pipeline
   /* FIXME: this does not check for a misaligned target address. See riscv_jalr_seq.sail. */
   /* write rd before anything else to prevent unintended strength */
   X(rd) = nextPC; /* compatible with JALR, C.JR and C.JALR */

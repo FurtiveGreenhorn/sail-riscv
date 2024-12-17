@@ -29,7 +29,10 @@ function fetch() -> FetchResult =
            * well as to generate precise fault addresses in any fetch
            * exceptions.
            */
-          ic_read(physaddr_bits(ppclo));
+          // ic_read(physaddr_bits(ppclo));
+          // for pipeline
+          read_addr(physaddr_bits(ppclo));
+          // for pipeline
           match mem_read(Execute(), ppclo, 2, false, false, false) {
             MemException(e) => F_Error(e, PC),
             MemValue(ilo)   => {

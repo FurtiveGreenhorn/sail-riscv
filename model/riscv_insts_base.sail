@@ -27,6 +27,13 @@ mapping clause encdec = UTYPE(imm, rd, op)
   <-> imm @ rd @ encdec_uop(op)
 
 function clause execute UTYPE(imm, rd, op) = {
+  // for pipeline
+  read_UJtype(rd);
+  match op {
+    RISCV_LUI   => read_type(INST_lui),
+    RISCV_AUIPC => read_type(INST_auipc)
+  };
+  // for pipeline
   let off : xlenbits = sign_extend(imm @ 0x000);
   let ret : xlenbits = match op {
     RISCV_LUI   => off,
@@ -63,6 +70,10 @@ but this is difficult
 */
 
 function clause execute (RISCV_JAL(imm, rd)) = {
+  // for pipeline
+  read_UJtype(rd);
+  read_type(INST_jal);
+  // for pipeline
   let t : xlenbits = PC + sign_extend(imm);
   /* Extensions get the first checks on the prospective target address. */
   match ext_control_check_pc(t) {
@@ -118,6 +129,17 @@ mapping clause encdec = BTYPE(imm7_6 @ imm5_0 @ imm7_5_0 @ imm5_4_1 @ 0b0, rs2, 
   <-> imm7_6 : bits(1) @ imm7_5_0 : bits(6) @ rs2 @ rs1 @ encdec_bop(op) @ imm5_4_1 : bits(4) @ imm5_0 : bits(1) @ 0b1100011
 
 function clause execute (BTYPE(imm, rs2, rs1, op)) = {
+  // for pipeline
+  read_SBtype(rs1, rs2);
+  match op {
+    RISCV_BEQ  => read_type(INST_beq),
+    RISCV_BNE  => read_type(INST_bne),
+    RISCV_BLT => read_type(INST_blt),
+    RISCV_BGE  => read_type(INST_bge),
+    RISCV_BLTU   => read_type(INST_bltu),
+    RISCV_BGEU  => read_type(INST_bgeu)
+  };
+  // for pipeline
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
   let taken : bool = match op {
@@ -128,6 +150,9 @@ function clause execute (BTYPE(imm, rs2, rs1, op)) = {
     RISCV_BLTU => rs1_val <_u rs2_val,
     RISCV_BGEU => rs1_val >=_u rs2_val
   };
+  // for pipeline
+  read_taken(taken);
+  // for pipeline
   let t : xlenbits = PC + sign_extend(imm);
   if taken then {
     /* Extensions get the first checks on the prospective target address. */
@@ -178,6 +203,17 @@ mapping clause encdec = ITYPE(imm, rs1, rd, op)
   <-> imm @ rs1 @ encdec_iop(op) @ rd @ 0b0010011
 
 function clause execute (ITYPE (imm, rs1, rd, op)) = {
+  // for pipeline
+  read_Itype(rs1, rd);
+  match op {
+    RISCV_ADDI  => read_type(INST_addi),
+    RISCV_SLTI  => read_type(INST_slti),
+    RISCV_SLTIU => read_type(INST_sltiu),
+    RISCV_ANDI  => read_type(INST_andi),
+    RISCV_ORI   => read_type(INST_ori),
+    RISCV_XORI  => read_type(INST_xori)
+  };
+  // for pipeline
   let rs1_val = X(rs1);
   let immext : xlenbits = sign_extend(imm);
   let result : xlenbits = match op {
@@ -218,6 +254,14 @@ mapping clause encdec = SHIFTIOP(shamt, rs1, rd, RISCV_SRLI) <-> 0b000000 @ sham
 mapping clause encdec = SHIFTIOP(shamt, rs1, rd, RISCV_SRAI) <-> 0b010000 @ shamt @ rs1 @ 0b101 @ rd @ 0b0010011 if xlen == 64 | shamt[5] == bitzero
 
 function clause execute (SHIFTIOP(shamt, rs1, rd, op)) = {
+  // for pipeline
+  read_Itype(rs1, rd);
+  match op {
+    RISCV_SLLI => read_type(INST_slli),
+    RISCV_SRLI => read_type(INST_srli),
+    RISCV_SRAI => read_type(INST_srai)
+  };
+  // for pipeline  
   let rs1_val = X(rs1);
   /* the decoder guard should ensure that shamt[5] = 0 for RV32 */
   let result : xlenbits = match op {
@@ -259,6 +303,21 @@ mapping clause encdec = RTYPE(rs2, rs1, rd, RISCV_SUB)  <-> 0b0100000 @ rs2 @ rs
 mapping clause encdec = RTYPE(rs2, rs1, rd, RISCV_SRA)  <-> 0b0100000 @ rs2 @ rs1 @ 0b101 @ rd @ 0b0110011
 
 function clause execute (RTYPE(rs2, rs1, rd, op)) = {
+  // for pipeline
+  read_Rtype(rs1, rs2, rd);
+  match op {
+    RISCV_ADD  => read_type(INST_add),
+    RISCV_SLT  => read_type(INST_slt),
+    RISCV_SLTU => read_type(INST_sltu),
+    RISCV_AND  => read_type(INST_and),
+    RISCV_OR   => read_type(INST_or),
+    RISCV_XOR  => read_type(INST_xor),
+    RISCV_SLL  => read_type(INST_sll),
+    RISCV_SRL  => read_type(INST_srl),
+    RISCV_SUB  => read_type(INST_sub),
+    RISCV_SRA  => read_type(INST_sra)
+  };
+  // for pipeline
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
   let result : xlenbits = match op {
@@ -324,10 +383,26 @@ function check_misaligned(vaddr : virtaddr, width : word_width) -> bool =
 
 function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
   // for pipeline
-  createInstrForStageInfo();
-  read_type(INST_ld);
-  read_rd(rd);
-  sendInstToPipeline();
+  read_Itype(rs1, rd);
+  match is_unsigned {
+    true => {
+      match width {
+        BYTE   => read_type(INST_lbu),
+        HALF   => read_type(INST_lhu),
+        WORD   => read_type(INST_lwu),
+        DOUBLE => ()
+      }
+    },
+    false => {
+      match width {
+        BYTE   => read_type(INST_lb),
+        HALF   => read_type(INST_lh),
+        WORD   => read_type(INST_lw),
+        DOUBLE => read_type(INST_ld)
+      }
+    }
+  };
+  // for pipeline
   let offset : xlenbits = sign_extend(imm);
   let width_bytes = size_bytes(width);
 
@@ -348,7 +423,7 @@ function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
           match mem_read(Read(Data), paddr, width_bytes, aq, rl, false) {
             MemValue(result) => {
               read_addr(physaddr_bits(paddr));
-              dc_read(physaddr_bits(paddr));
+              // dc_read(physaddr_bits(paddr));
               X(rd) = extend_value(is_unsigned, result); RETIRE_SUCCESS 
             },
             MemException(e) => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
@@ -388,6 +463,15 @@ mapping clause encdec = STORE(imm7 @ imm5, rs2, rs1, size, false, false)        
 /* NOTE: Currently, we only EA if address translation is successful.
    This may need revisiting. */
 function clause execute (STORE(imm, rs2, rs1, width, aq, rl)) = {
+  // for pipeline
+  read_SBtype(rs1, rs2);
+  match width {
+    BYTE   => read_type(INST_sb),
+    HALF   => read_type(INST_sh),
+    WORD   => read_type(INST_sw),
+    DOUBLE => read_type(INST_sd)
+  };
+  // for pipeline
   let offset : xlenbits = sign_extend(imm);
   let width_bytes = size_bytes(width);
 
@@ -404,7 +488,7 @@ function clause execute (STORE(imm, rs2, rs1, width, aq, rl)) = {
       else match translateAddr(vaddr, Write(Data)) {
         TR_Failure(e, _)    => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
         TR_Address(paddr, _) => {
-          dc_write(physaddr_bits(paddr));
+          // dc_write(physaddr_bits(paddr));
           let eares = mem_write_ea(paddr, width_bytes, aq, rl, false);
           match (eares) {
             MemException(e) => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
@@ -434,6 +518,10 @@ mapping clause encdec = ADDIW(imm, rs1, rd)
       if xlen == 64
 
 function clause execute (ADDIW(imm, rs1, rd)) = {
+  // for pipeline
+  read_Itype(rs1, rd);
+  read_type(INST_addiw);
+  // for pipeline
   let result : xlenbits = sign_extend(imm) + X(rs1);
   X(rd) = sign_extend(result[31..0]);
   RETIRE_SUCCESS
@@ -469,6 +557,16 @@ mapping clause encdec = RTYPEW(rs2, rs1, rd, RISCV_SRAW)
       if xlen == 64
 
 function clause execute (RTYPEW(rs2, rs1, rd, op)) = {
+  // for pipeline
+  read_Rtype(rs1, rs2, rd);
+  match op {
+    RISCV_ADDW => read_type(INST_addw),
+    RISCV_SUBW => read_type(INST_subw),
+    RISCV_SLLW => read_type(INST_sllw),
+    RISCV_SRLW => read_type(INST_srlw),
+    RISCV_SRAW => read_type(INST_sraw)
+  };
+  // for pipeline
   let rs1_val = (X(rs1))[31..0];
   let rs2_val = (X(rs2))[31..0];
   let result : bits(32) = match op {
@@ -512,6 +610,14 @@ mapping clause encdec = SHIFTIWOP(shamt, rs1, rd, RISCV_SRAIW)
       if xlen == 64
 
 function clause execute (SHIFTIWOP(shamt, rs1, rd, op)) = {
+  // for pipeline
+  read_Itype(rs1, rd);
+  match op {
+    RISCV_SLLIW => read_type(INST_slliw),
+    RISCV_SRLIW => read_type(INST_srliw),
+    RISCV_SRAIW => read_type(INST_sraiw)
+  };
+  // for pipeline  
   let rs1_val = (X(rs1))[31..0];
   let result : bits(32) = match op {
     RISCV_SLLIW => rs1_val << shamt,
@@ -547,6 +653,10 @@ function effective_fence_set(set : bits(4), fiom : bool) -> bits(4) = {
 }
 
 function clause execute (FENCE(pred, succ)) = {
+  // for pipeline
+  read_Itype();
+  read_type(INST_fence);
+  // for pipeline
   // If the FIOM bit in menvcfg/senvcfg is set then the I/O bits can imply R/W.
   let fiom = is_fiom_active();
   let pred = effective_fence_set(pred, fiom);
@@ -606,6 +716,10 @@ mapping clause encdec = FENCE_TSO(pred, succ)
   <-> 0b1000 @ pred @ succ @ 0b00000 @ 0b000 @ 0b00000 @ 0b0001111
 
 function clause execute (FENCE_TSO(pred, succ)) = {
+  // for pipeline
+  read_Itype();
+  read_type(INST_fence);
+  // for pipeline
   match (pred, succ) {
     (_ : bits(2) @ 0b11, _ : bits(2) @ 0b11) => sail_barrier(Barrier_RISCV_tso),
     (_ : bits(2) @ 0b00, _ : bits(2) @ 0b00) => (),
@@ -626,6 +740,10 @@ mapping clause encdec = ECALL()
   <-> 0b000000000000 @ 0b00000 @ 0b000 @ 0b00000 @ 0b1110011
 
 function clause execute ECALL() = {
+  // for pipeline
+  read_Itype();
+  read_type(INST_ecall);
+  // for pipeline
   let t : sync_exception =
     struct { trap = match (cur_privilege) {
                       User       => E_U_EnvCall(),
@@ -647,6 +765,9 @@ mapping clause encdec = MRET()
   <-> 0b0011000 @ 0b00010 @ 0b00000 @ 0b000 @ 0b00000 @ 0b1110011
 
 function clause execute MRET() = {
+  // for pipeline
+  read_type(INST_privilege);
+  // for pipeline
   if   cur_privilege != Machine
   then { handle_illegal(); RETIRE_FAIL }
   else if not(ext_check_xret_priv (Machine))
@@ -666,6 +787,9 @@ mapping clause encdec = SRET()
   <-> 0b0001000 @ 0b00010 @ 0b00000 @ 0b000 @ 0b00000 @ 0b1110011
 
 function clause execute SRET() = {
+  // for pipeline
+  read_type(INST_privilege);
+  // for pipeline
   let sret_illegal : bool = match cur_privilege {
     User       => true,
     Supervisor => not(extensionEnabled(Ext_S)) | mstatus[TSR] == 0b1,
@@ -690,6 +814,7 @@ mapping clause encdec = EBREAK()
   <-> 0b000000000001 @ 0b00000 @ 0b000 @ 0b00000 @ 0b1110011
 
 function clause execute EBREAK() = {
+  
   handle_mem_exception(virtaddr(PC), E_Breakpoint());
   RETIRE_FAIL
 }
@@ -702,7 +827,10 @@ union clause ast = WFI : unit
 mapping clause encdec = WFI()
   <-> 0b000100000101 @ 0b00000 @ 0b000 @ 0b00000 @ 0b1110011
 
-function clause execute WFI() =
+function clause execute WFI() = {
+  // for pipeline
+  read_type(INST_privilege);
+  // for pipeline
   match cur_privilege {
     Machine    => { platform_wfi(); RETIRE_SUCCESS },
     Supervisor => if   mstatus[TW] == 0b1
@@ -710,7 +838,7 @@ function clause execute WFI() =
                   else { platform_wfi(); RETIRE_SUCCESS },
     User       => { handle_illegal(); RETIRE_FAIL }
   }
-
+}
 mapping clause assembly = WFI() <-> "wfi"
 
 /* ****************************************************************** */
@@ -720,6 +848,9 @@ mapping clause encdec = SFENCE_VMA(rs1, rs2)
   <-> 0b0001001 @ rs2 @ rs1 @ 0b000 @ 0b00000 @ 0b1110011
 
 function clause execute SFENCE_VMA(rs1, rs2) = {
+  // for pipeline
+  read_type(INST_privilege);
+  // for pipeline
   let addr : option(xlenbits) = if rs1 == 0b00000 then None() else Some(X(rs1));
   let asid : option(xlenbits) = if rs2 == 0b00000 then None() else Some(X(rs2));
   match cur_privilege {

@@ -30,68 +30,63 @@ private:
     void handle_load_use_hazard();
 };
 
+class FrontendSail : public SimplePipelineStageLogicMixIn<FrontendSail> {
+public:
+    FrontendSail() {
+        name = "Frontend Sail";
+    }
+};
+
 class Fetch : public SimplePipelineStageLogicMixIn<Fetch> {
 public:
-    Fetch(Cache *ic) : icache(ic) {}
-
-    void process_stage() {
-        std::cout << "Fetch!" << std::endl;
-        // ToDo: access cache and send signal to control unit if missed
+    Fetch(Cache *ic) : icache(ic) {
+        name = "Fetch";
     }
-
-    void print_name() {
-        std::cout << "Fetch";
+    void process_stage() {
+        // ToDo: access cache and send signal to control unit if missed
     }
 private:
     Cache *icache;
+
 };
 class Decode : public SimplePipelineStageLogicMixIn<Decode> {
 public:
-    Decode(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {}
+    Decode(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {
+        name = "Decode";
+    }
 
     void process_stage() {
-        std::cout << "Decode!" << std::endl;
         // send rs
         if (data == nullptr)
             return;
         hazard_detection_unit->
             receive_IfId_rs(data->rs1, data->rs2);
     }
-
-    void print_name() {
-        std::cout << "Decode";
-    }
 private:
     HazardDetectionUnit *hazard_detection_unit;
 };
 class Execute: public SimplePipelineStageLogicMixIn<Execute> {
 public:
-    Execute(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {}
+    Execute(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {
+        name = "Execute";
+    }
 
     void process_stage() {
-        if (data == nullptr)
-            return;
         if (data->is_load())
             hazard_detection_unit->
                 receive_IdEx_rd(data->rd);
-    }
-
-    void print_name() {
-        std::cout << "Execute";
     }
 private:
     HazardDetectionUnit *hazard_detection_unit;
 };
 class Mem : public SimplePipelineStageLogicMixIn<Mem> {
 public:
-    Mem(Cache *dc) : dcache(dc) {}
+    Mem(Cache *dc) : dcache(dc) {
+        name = "Mem";
+    }
 
     void process_stage() {
         // ToDo: access cache and send signal to control unit if missed
-    }
-
-    void print_name() {
-        std::cout << "Mem";
     }
 private:
     Cache *dcache;
@@ -100,25 +95,23 @@ private:
 class Wb : public SimplePipelineStageLogicMixIn<Wb> {
 public:
     Wb(Instruction_pool<INST_POOL_SIZE> *inst_pool)
-        : inst_pool(inst_pool) {}
+        : inst_pool(inst_pool) {
+        name = "Wb";
+    }
     
     void process_stage() {
-        std::cout << "Wb!" << std::endl;
-        std::cout << "free inst" << std::endl;
         inst_pool->freeInst();
-    }
-
-    void print_name() {
-        std::cout << "Wb";
     }
 private:
     Instruction_pool<INST_POOL_SIZE> *inst_pool;
 };
 
-class PCReg : public SimplePipelineRegMixin<PCReg, NoStage, Fetch> {
+class PCReg : public SimplePipelineRegMixin<PCReg, FrontendSail, Fetch> {
 public:
-    PCReg(Clock &clk, NoStage *noStage, Fetch *fetch)
-        : SimplePipelineRegMixin(clk, noStage, fetch) {}
+    PCReg(Clock &clk, FrontendSail *noStage, Fetch *fetch)
+        : SimplePipelineRegMixin(clk, noStage, fetch) {
+        name = "PC";
+    }
     void receive(Instruction *new_pc) {
         data = new_pc;
     }
@@ -129,51 +122,38 @@ public:
     bool isStalled() const {
         return stallFlag;
     }
-
-    void print_name() {
-        std::cout << "PC";
-    }
 };
 class IfIdReg : public SimplePipelineRegMixin<IfIdReg, Fetch, Decode> {
 public:
     IfIdReg(Clock &clk, Fetch *fetch, Decode *decode)
-        : SimplePipelineRegMixin(clk, fetch, decode) {}
-
-    void print_name() {
-        std::cout << "IF/ID";
+        : SimplePipelineRegMixin(clk, fetch, decode) {
+        name = "IF/ID";
     }
 };
 class IdExReg : public SimplePipelineRegMixin<IdExReg, Decode, Execute> {
 public:
     IdExReg(Clock &clk, Decode *decode, Execute *execute)
-        : SimplePipelineRegMixin(clk, decode, execute) {}
+        : SimplePipelineRegMixin(clk, decode, execute) {
+        name = "ID/EX";
+    }
     
     void flush() {
-        if (data == nullptr)
-            return;
+        assert(data != nullptr);
         data->set_bubble();
-    }
-
-    void print_name() {
-        std::cout << "ID/EX";
     }
 };
 class ExMemReg : public SimplePipelineRegMixin<ExMemReg, Execute, Mem> {
 public:
     ExMemReg(Clock &clk, Execute *execute, Mem *mem)
-        : SimplePipelineRegMixin(clk, execute, mem) {}
-
-    void print_name() {
-        std::cout << "EX/MEM";
-    }
+        : SimplePipelineRegMixin(clk, execute, mem) {
+        name = "EX/MEM";
+        }
 };
 class MemWbReg : public SimplePipelineRegMixin<MemWbReg, Mem, Wb> {
 public:
     MemWbReg(Clock &clk, Mem *mem, Wb *wb)
-        : SimplePipelineRegMixin(clk, mem, wb) {}
-
-    void print_name() {
-        std::cout << "MEM/WB";
+        : SimplePipelineRegMixin(clk, mem, wb) {
+        name = "MEM/WB";
     }
 };
 

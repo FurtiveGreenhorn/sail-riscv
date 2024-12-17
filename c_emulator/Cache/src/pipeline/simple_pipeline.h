@@ -15,7 +15,7 @@ private:
     HazardDetectionUnit hazard_dectection_unit;
     std::unique_ptr<Cache> icache, dcache, l2cache;
     // pipeline stage
-    NoStage noStage;
+    FrontendSail frontend_sail;
     Fetch fetch;
     Decode decode;
     Execute execute;

@@ -286,8 +286,9 @@ $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o: generated_definitions/c/riscv_model_$(AR
 CACHE_DIR = c_emulator/Cache
 Cache_LIBDIR = $(CACHE_DIR)/build
 Cache_LIBS = $(Cache_LIBDIR)/cachelib.a
+
 $(Cache_LIBS):
-	$(MAKE) -C $(Cache_LIBDIR)
+	$(MAKE) -C $(CACHE_DIR)
 
 c_emulator/riscv_sim_$(ARCH): $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o $(Cache_LIBS) $(SAIL_OBJS) $(EMULATOR_OBJS) $(SOFTFLOAT_LIBS)
 	g++ -g $^ $(C_LIBS_WRAPPED) -o $@

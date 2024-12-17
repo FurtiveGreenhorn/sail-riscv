@@ -15,14 +15,14 @@ SimplePipeline::SimplePipeline() :
     mem(dcache.get()),
     wb(&inst_pool),
     // pipeline reg
-    pc_reg(clock, &noStage, &fetch),
+    pc_reg(clock, &frontend_sail, &fetch),
     if_id_reg(clock, &fetch, &decode),
     id_ex_reg(clock, &decode, &execute),
     ex_mem_reg(clock, &execute, &mem),
     mem_wb_reg(clock, &mem, &wb) {}
 
 void SimplePipeline::read_inst(Instruction *inst) {
-    pc_reg.receive(inst);
+    frontend_sail.receive(inst);
     clock.tick();
     // Ensure the previous PC is consumed 
     // before reading the next instruction

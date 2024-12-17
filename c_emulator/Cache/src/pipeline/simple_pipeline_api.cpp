@@ -20,25 +20,55 @@ unit read_addr(uint64_t addr) {
     return UNIT;
 }
 
+unit read_Rtype(mach_bits rs1, mach_bits rs2, mach_bits rd) {
+    stageInfoInstruction->set_Rtype(
+        rs1, rs2, rd);
+    return UNIT;
+}
+unit read_Itype(mach_bits rs1, mach_bits rd) {
+    stageInfoInstruction->set_Itype(
+        rs1, rd);
+    return UNIT;
+}
+unit read_Itype_xRs1(mach_bits rd) {
+    stageInfoInstruction->set_Itype(
+        REGISTER_NOT_USED, rd);
+    return UNIT;
+}
+unit read_Itype_xRs1xRd() {
+    stageInfoInstruction->set_Itype(
+        REGISTER_NOT_USED, REGISTER_NOT_USED);
+    return UNIT;
+}
+unit read_SBtype(mach_bits rs1, mach_bits rs2) {
+    stageInfoInstruction->set_SBtype(
+        rs1, rs2);
+    return UNIT;
+}
+unit read_UJtype(mach_bits rd) {
+    stageInfoInstruction->set_UJtype(
+        rd);
+    return UNIT;
+}
 unit read_type(const int type) {
     stageInfoInstruction->set_type(Instruction_type(type));
     return UNIT;
 }
 
-unit read_rs(mach_bits rs1, mach_bits rs2) {
-    stageInfoInstruction->set_rs(rs1, rs2);
-    return UNIT;
-}
+// unit read_rs(mach_bits rs1, mach_bits rs2) {
+//     stageInfoInstruction->set_rs(rs1, rs2);
+//     return UNIT;
+// }
 
-unit read_rs1(mach_bits rs1) {
-    stageInfoInstruction->set_rs1(rs1);
-    return UNIT;
-}
+// unit read_rs1(mach_bits rs1) {
+//     stageInfoInstruction->set_rs1(rs1);
+//     return UNIT;
+// }
 
-unit read_rd(mach_bits rd) {
-    stageInfoInstruction->set_rs1(rd);
-    return UNIT;
-}
+// unit read_rd(mach_bits rd) {
+//     stageInfoInstruction->set_rs1(rd);
+//     return UNIT;
+// }
 
 unit read_taken(bool taken) {
     stageInfoInstruction->set_taken(taken);
