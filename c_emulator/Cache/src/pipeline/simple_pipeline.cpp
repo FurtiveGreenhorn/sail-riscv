@@ -33,3 +33,9 @@ void SimplePipeline::read_inst(Instruction *inst) {
 Instruction *SimplePipeline::create_inst() {
     return inst_pool.newInst();
 }
+
+void SimplePipeline::show_cycle_count() {
+    std::cout << "Cycle Count: " 
+              << clock.get_cycle_count()
+              << std::endl;
+}

@@ -4,7 +4,7 @@
 
 // instruction types
 enum Instruction_type : unsigned {
-    INST_unknown, INST_nop,
+    INST_unknown,
     // RV64I
     INST_add, INST_addw, INST_addi, INST_addiw, INST_sub, INST_subw,
     INST_and, INST_andi, INST_or, INST_ori, INST_xor, INST_xori,
@@ -20,7 +20,7 @@ enum Instruction_type : unsigned {
     INST_sb, INST_sh, INST_sw, INST_sd,
     INST_fence, INST_ebreak, INST_ecall,
     INST_csrrc, INST_csrrci, INST_csrrs, INST_csrrsi, INST_csrrw, INST_csrrwi,
-    INST_privilege
+    INST_privilege, INST_nop
 };
 
 using RegNum = unsigned;
@@ -30,8 +30,8 @@ struct Instruction {
     Instruction_type type;
     RegNum rs1, rs2, rd;
     bool taken, is_used;
-    // for debug
-    unsigned debugNo;
+    // // for debug
+    // unsigned debugNo;
 
     void set_addr(uint64_t new_addr) {
         addr = new_addr;

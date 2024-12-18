@@ -24,7 +24,7 @@ private:
     PCReg *pc_reg;
     IfIdReg *if_id_reg;
     IdExReg *id_ex_reg;
-    bool logged = true;
+    bool logged = false;
 
     bool detect_load_use_hazard();
     void send_stall_for_load_use_hazard();
@@ -128,11 +128,12 @@ public:
     
     void flush() {
         assert(data != nullptr);
-        bool flushFlag = true;
+        flushFlag = true;
     }
 
     void after_accept() {
-        std::cout << "---------flush ovo--------" << std::endl;
+        if (logged)
+            std::cout << name << " has been flushed !" << std::endl;
         if (flushFlag == false)
             return;
         data = inst_pool->getBubble();
@@ -180,12 +181,13 @@ inline void HazardDetectionUnit::handle_load_use_hazard() {
 }
 
 inline void HazardDetectionUnit::send_stall_for_load_use_hazard() {
-    std::cout << "detect hazard !" << std::endl;
+    if (logged)
+        std::cout << "detect hazard !" << std::endl;
     pc_reg->receive_stall();
     if_id_reg->receive_stall();
     id_ex_reg->flush();
     if (logged) {
-        std::cout << "ID/EX is flushed !" << std::endl;
+        std::cout << "Send flush to ID/EX !" << std::endl;
     }
 }
 

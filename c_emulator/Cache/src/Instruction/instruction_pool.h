@@ -20,11 +20,11 @@ public:
         assert(new_inst.is_used == false);
         new_inst.is_used = true;
         // for debug
-        new_inst.debugNo = end - 1;
+        // new_inst.debugNo = end - 1;
         if (logged) {
-            // std::cout << "Instruction Created !" << std::endl;
-            // for debug
-            std::cout << "Instruction " << end - 1 << " Created !" << std::endl;
+            std::cout << "Instruction Created !" << std::endl;
+            // // for debug
+            // std::cout << "Instruction " << end - 1 << " Created !" << std::endl;
         }
         return &new_inst;
     }
@@ -37,9 +37,9 @@ public:
         assert(free_inst.is_used == true);
         free_inst.is_used = false;
         if (logged) {
-            // std::cout << "Instruction Retired !" << std::endl;
+            std::cout << "Instruction Retired !" << std::endl;
             // for debug
-            std::cout << "Instruction " << start - 1 << " Retired !" << std::endl;
+            // std::cout << "Instruction " << start - 1 << " Retired !" << std::endl;
         }
     }
     Instruction *getBubble() {
@@ -49,5 +49,5 @@ private:
     std::array<Instruction, size> inst;
     Instruction bubble;
     std::size_t start, end;
-    bool logged = true;
+    bool logged = false;
 };

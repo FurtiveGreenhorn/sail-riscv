@@ -1,6 +1,6 @@
 // instruction types
 enum instruction_type = {
-  INST_nop,
+  INST_unknown,
   // RV64I
   INST_add, INST_addw, INST_addi, INST_addiw, INST_sub, INST_subw,
   INST_and, INST_andi, INST_or, INST_ori, INST_xor, INST_xori,
@@ -16,12 +16,13 @@ enum instruction_type = {
   INST_lbu, INST_lhu, INST_lwu,
   INST_fence, INST_ebreak, INST_ecall,
   INST_csrrc, INST_csrrci, INST_csrrs, INST_csrrsi, INST_csrrw, INST_csrrwi,
-  INST_privilege
+  INST_privilege, INST_nop,
 }
 
 // pipeline api
 val createInstrForStageInfo = pure {c: "createInstrForStageInfo"} : unit -> unit
 val sendInstToPipeline = pure {c: "sendInstToPipeline"} : unit -> unit
+val show_cycle_count = pure {c: "show_cycle_count"} : unit -> unit
 val read_addr = pure {c: "read_addr"} : xlenbits -> unit
 val read_Rtype = pure {c: "read_Rtype"} : (bits(5), bits(5), bits(5)) -> unit
 val read_Itype_ = pure {c: "read_Itype"} : (bits(5), bits(5)) -> unit

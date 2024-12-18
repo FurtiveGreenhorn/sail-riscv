@@ -15,6 +15,11 @@ unit sendInstToPipeline() {
     return UNIT;
 }
 
+unit show_cycle_count() {
+    simplePipeline.show_cycle_count();
+    return UNIT;
+}
+
 unit read_addr(uint64_t addr) {
     stageInfoInstruction->set_addr(addr);
     return UNIT;

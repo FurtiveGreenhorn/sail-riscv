@@ -8,6 +8,7 @@ public:
     SimplePipeline();
     void read_inst(Instruction *inst);
     Instruction *create_inst();
+    void show_cycle_count();
 
 private:
     Instruction_pool<INST_POOL_SIZE> inst_pool;
