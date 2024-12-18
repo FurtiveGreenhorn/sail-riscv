@@ -9,6 +9,10 @@
 /* The definition for the sequential model. */
 
 function clause execute (RISCV_JALR(imm, rs1, rd)) = {
+// for pipeline
+  read_Itype(rs1, rd);
+  read_type(INST_jalr);
+// for pipeline
 /* For the sequential model, the memory-model definition doesn't work directly
  * if rs1 = rd.  We would effectively have to keep a regfile for reads and another for
  * writes, and swap on instruction completion.  This could perhaps be optimized in

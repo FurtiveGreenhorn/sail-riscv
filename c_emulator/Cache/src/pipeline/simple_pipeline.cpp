@@ -13,16 +13,16 @@ SimplePipeline::SimplePipeline() :
     decode(&hazard_dectection_unit),
     execute(&hazard_dectection_unit),
     mem(dcache.get()),
-    wb(&inst_pool),
     // pipeline reg
-    pc_reg(clock, &frontend_sail, &fetch),
+    pc_reg(clock, nullptr, &fetch),
     if_id_reg(clock, &fetch, &decode),
-    id_ex_reg(clock, &decode, &execute),
+    id_ex_reg(clock, &decode, &execute, &inst_pool),
     ex_mem_reg(clock, &execute, &mem),
-    mem_wb_reg(clock, &mem, &wb) {}
+    mem_wb_reg(clock, &mem, &wb),
+    retire_reg(clock, &wb, &inst_pool) {}
 
 void SimplePipeline::read_inst(Instruction *inst) {
-    frontend_sail.receive(inst);
+    pc_reg.receive(inst);
     clock.tick();
     // Ensure the previous PC is consumed 
     // before reading the next instruction

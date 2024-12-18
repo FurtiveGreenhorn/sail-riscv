@@ -24,17 +24,11 @@ private:
     PCReg *pc_reg;
     IfIdReg *if_id_reg;
     IdExReg *id_ex_reg;
+    bool logged = true;
 
     bool detect_load_use_hazard();
     void send_stall_for_load_use_hazard();
     void handle_load_use_hazard();
-};
-
-class FrontendSail : public SimplePipelineStageLogicMixIn<FrontendSail> {
-public:
-    FrontendSail() {
-        name = "Frontend Sail";
-    }
 };
 
 class Fetch : public SimplePipelineStageLogicMixIn<Fetch> {
@@ -94,21 +88,14 @@ private:
 
 class Wb : public SimplePipelineStageLogicMixIn<Wb> {
 public:
-    Wb(Instruction_pool<INST_POOL_SIZE> *inst_pool)
-        : inst_pool(inst_pool) {
+    Wb() {
         name = "Wb";
     }
-    
-    void process_stage() {
-        inst_pool->freeInst();
-    }
-private:
-    Instruction_pool<INST_POOL_SIZE> *inst_pool;
 };
 
-class PCReg : public SimplePipelineRegMixin<PCReg, FrontendSail, Fetch> {
+class PCReg : public SimplePipelineRegMixin<PCReg, NoStage, Fetch> {
 public:
-    PCReg(Clock &clk, FrontendSail *noStage, Fetch *fetch)
+    PCReg(Clock &clk, NoStage *noStage, Fetch *fetch)
         : SimplePipelineRegMixin(clk, noStage, fetch) {
         name = "PC";
     }
@@ -132,15 +119,28 @@ public:
 };
 class IdExReg : public SimplePipelineRegMixin<IdExReg, Decode, Execute> {
 public:
-    IdExReg(Clock &clk, Decode *decode, Execute *execute)
-        : SimplePipelineRegMixin(clk, decode, execute) {
+    IdExReg(Clock &clk, Decode *decode, Execute *execute, 
+            Instruction_pool<INST_POOL_SIZE> *inst_pool)
+        : SimplePipelineRegMixin(clk, decode, execute),
+            inst_pool(inst_pool) {
         name = "ID/EX";
     }
     
     void flush() {
         assert(data != nullptr);
-        data->set_bubble();
+        bool flushFlag = true;
     }
+
+    void after_accept() {
+        std::cout << "---------flush ovo--------" << std::endl;
+        if (flushFlag == false)
+            return;
+        data = inst_pool->getBubble();
+        flushFlag = false;
+    }
+private:
+    Instruction_pool<INST_POOL_SIZE> *inst_pool;
+    bool flushFlag = false;
 };
 class ExMemReg : public SimplePipelineRegMixin<ExMemReg, Execute, Mem> {
 public:
@@ -157,6 +157,21 @@ public:
     }
 };
 
+class RetireReg : public SimplePipelineRegMixin<RetireReg, Wb> {
+public:
+    RetireReg(Clock &clk, Wb *wb, Instruction_pool<INST_POOL_SIZE> *inst_pool)
+        : SimplePipelineRegMixin(clk, wb), inst_pool(inst_pool) {
+        name = "Retire";
+    }
+    void accept() {
+        SimplePipelineRegMixin::accept();
+        if (data && data->is_bubble() == false)
+            inst_pool->freeInst();
+    }
+private:
+    Instruction_pool<INST_POOL_SIZE> *inst_pool;
+};
+
 // HazardDetectionUnit function implementation
 inline void HazardDetectionUnit::handle_load_use_hazard() {
     if (detect_load_use_hazard() == true)
@@ -169,6 +184,9 @@ inline void HazardDetectionUnit::send_stall_for_load_use_hazard() {
     pc_reg->receive_stall();
     if_id_reg->receive_stall();
     id_ex_reg->flush();
+    if (logged) {
+        std::cout << "ID/EX is flushed !" << std::endl;
+    }
 }
 
 inline bool HazardDetectionUnit::detect_load_use_hazard() {

@@ -21,10 +21,15 @@ public:
                       << (data->is_bubble() ? "a bubble" : "data")
                       << " !" << std::endl;
         }
+        if(logged) {
+            std::cout << name 
+                << " is processing !" << std::endl;
+        }        
+        static_cast<DerivedT&>(*this).process_stage();     
     }   
     // default implementation of process_stage
     void process_stage() {
-        // default does nothing
+        // Default implementation does nothing
     }
     // data flow out to next pipeline register
     DataT *flow_out() {
@@ -35,13 +40,6 @@ public:
             }
             return nullptr;
         }
-        
-        if(logged) {
-            std::cout << name 
-                << " is processing !" << std::endl;
-        }        
-        static_cast<DerivedT&>(*this).process_stage();
-        
         if(logged) {
             std::cout << (data->is_bubble() ? "Bubble" : "data")
                       << " flowed out from "
@@ -61,38 +59,11 @@ protected:
     bool logged = true;
 };
 
-class Clockable {
+class ClockableConcept {
 public:
+    virtual ~ClockableConcept() = default;
     virtual void clock_start() = 0;
     virtual void clock_end() = 0;
-};
-
-class Clock {
-public:
-    Clock() : cycle_counter(0) {}
-    void tick() { 
-        if(logged) {
-            std::cout << "Clock start!" << std::endl;
-        }
-        for (auto *clockable : clockableObjects)
-            clockable->clock_start();
-        if(logged) {
-            std::cout << "Clock end!" << std::endl;
-        }
-        for (auto *clockable : clockableObjects)
-            clockable->clock_end();
-        ++cycle_counter;
-    }
-    void registerClockable(Clockable* clockable) {
-        clockableObjects.push_back(clockable);
-    }
-    unsigned get_cycle_count() {
-        return cycle_counter;
-    }
-private:
-    std::vector<Clockable *> clockableObjects;
-    unsigned cycle_counter;
-    bool logged = false;
 };
 
 
@@ -100,22 +71,62 @@ class NoStage : public SimplePipelineStageLogicMixIn<NoStage> { };
 
 template<typename DerivedT, typename PreviousStage = NoStage, 
          typename NextStage = NoStage, typename DataT = Instruction>
-class SimplePipelineRegMixin : public Clockable {
-public:    
-    SimplePipelineRegMixin(Clock &clk, PreviousStage *prevStage, NextStage *nextStage)
+class ClockableModel : public ClockableConcept {
+public:
+    ClockableModel(DerivedT &&reg) : reg(reg) {}
+    void clock_start() override {
+        reg.clock_start();
+    }
+    void clock_end() override {
+        reg.clock_end();
+    }
+private:
+    DerivedT reg;
+};
+
+class Clock {
+public:
+    Clock() : cycle_counter(0) {}
+    void tick() { 
+        if(logged)
+            std::cout << "Clock start!" << std::endl;
+        for (auto &clockable : clockableObjects)
+            clockable->clock_start();
+        if(logged)
+            std::cout << "Clock end!" << std::endl;
+        for (auto &clockable : clockableObjects)
+            clockable->clock_end();
+        ++cycle_counter;
+    }
+    void registerClockable(std::unique_ptr<ClockableConcept>&& clockable) {
+        clockableObjects.push_back(std::move(clockable));
+    }
+    unsigned get_cycle_count() {
+        return cycle_counter;
+    }
+private:
+    std::vector<std::unique_ptr<ClockableConcept>> clockableObjects;
+    unsigned cycle_counter;
+    bool logged = true;
+};
+
+template<typename DerivedT, typename PreviousStage = NoStage, 
+         typename NextStage = NoStage, typename DataT = Instruction>
+class SimplePipelineRegMixin : public ClockableConcept {
+public:
+    SimplePipelineRegMixin(Clock &clk, 
+        PreviousStage *prevStage = nullptr, NextStage *nextStage = nullptr)
         : previous_stage(prevStage), next_stage(nextStage), 
           data(nullptr), stallFlag(false) {
-        clk.registerClockable(static_cast<DerivedT*>(this));
+        using ClockableModelT = ClockableModel<DerivedT, PreviousStage, NextStage, DataT>;
+        clk.registerClockable( 
+            std::unique_ptr<ClockableConcept>(
+                new ClockableModelT(std::move(static_cast<DerivedT&>(*this)))));
     }
     void clock_start() override {
-        // transmit data to next stage
-        if (stallFlag == true) {
-            if (logged) {
-                std::cout << name << " is stalled !" << std::endl;
-            }
+        if (stallFlag == true)
             stallFlag = false;
-            return;
-        }
+        // transmit data to next stage
         // Supports read and write enables for 
         // controlling data transfer, with customizable behavior
         static_cast<DerivedT&>(*this).transmit();
@@ -123,7 +134,9 @@ public:
     void clock_end() override {
         // Supports read and write enables for 
         // controlling data transfer, with customizable behavior
+        std::cout << typeid(DerivedT&).name() << "->clock_end !\n";
         static_cast<DerivedT&>(*this).accept();
+        static_cast<DerivedT&>(*this).after_accept();
     }
     void receive_stall() {
         if (logged) {
@@ -134,6 +147,14 @@ public:
 
     // accept(): accept data from previous stage
     void accept() {
+        if (stallFlag == true) {
+            if (logged) {
+                std::cout << name << " is stalled !" << std::endl;
+            }
+            return;
+        }
+        if (previous_stage == nullptr)
+            return;
         DataT *data_in = previous_stage->flow_out();
         if (data_in == nullptr) {
             if (logged) {
@@ -153,8 +174,14 @@ public:
                       << previous_stage->get_name() << std::endl;
         }        
     }
+    void after_accept() {
+        // Default implementation does nothing
+        std::cout << "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww\n";
+    }
     // transmit(): transmit data to next stage
     void transmit() {
+        if (next_stage == nullptr)
+            return;
         if (data == nullptr) {
             if(logged) {
                 std::cout << name 
@@ -163,11 +190,14 @@ public:
             }
             return;
         }
-        next_stage->receive(data);
         if(logged) {
-            std::cout << name << " transmited data to " 
-                      << next_stage->get_name() << " !" << std::endl;
+            // std::cout << name << " transmited data to " 
+            //           << next_stage->get_name() << " !" << std::endl;
+            // for debug
+            std::cout << name << " transmited " << "Inst[" << data->debugNo << "]" <<" to " 
+                    << next_stage->get_name() << " !" << std::endl;
         }
+        next_stage->receive(data);
     }
     
 protected:
@@ -176,5 +206,5 @@ protected:
     DataT *data = nullptr;
     bool stallFlag = false;
     std::string name;
-    bool logged = false;
+    bool logged = true;
 };
