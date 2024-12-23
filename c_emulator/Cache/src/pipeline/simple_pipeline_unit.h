@@ -148,7 +148,7 @@ public:
     ExMemReg(Clock &clk, Execute *execute, Mem *mem)
         : SimplePipelineRegMixin(clk, execute, mem) {
         name = "EX/MEM";
-        }
+    }
 };
 class MemWbReg : public SimplePipelineRegMixin<MemWbReg, Mem, Wb> {
 public:
