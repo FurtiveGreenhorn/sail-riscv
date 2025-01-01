@@ -9,12 +9,13 @@ public:
     void read_inst(Instruction *inst);
     Instruction *create_inst();
     void show_cycle_count();
+    void show_cache_info();
 
 private:
     Instruction_pool<INST_POOL_SIZE> inst_pool;
     Clock clock;
     HazardDetectionUnit hazard_dectection_unit;
-    std::unique_ptr<Cache> icache, dcache, l2cache;
+    std::unique_ptr<CacheConcept> icache, dcache, l2cache, memory;
     // pipeline stage
     Fetch fetch;
     Decode decode;

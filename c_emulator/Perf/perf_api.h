@@ -13,5 +13,4 @@
 // 否則沒有頭文件 riscv_model_RV64.c 編譯時找不到我們提供的cache函式的宣告
 
 #pragma once
-#include "src/main_cache/riscv_cpp_test.h"
 #include "src/pipeline/simple_pipeline_api.h"

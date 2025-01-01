@@ -3,8 +3,7 @@
 #include "../Instruction/instruction_pool.h"
 #include "../Instruction/instruction.h"
 #include "simple_pipeline_unit_concept.h"
-
-class Cache {};
+#include "simple_cache/cache.h"
 
 class Fetch;
 class PCReg;
@@ -33,19 +32,20 @@ private:
 
 class Fetch : public SimplePipelineStageLogicMixIn<Fetch> {
 public:
-    Fetch(Cache *ic) : icache(ic) {
+    Fetch(CacheConcept *ic) : 
+        icache(ic){
         name = "Fetch";
     }
     void process_stage() {
-        // ToDo: access cache and send signal to control unit if missed
+        icache->access(data->addr);
     }
 private:
-    Cache *icache;
-
+    CacheConcept *icache;
 };
 class Decode : public SimplePipelineStageLogicMixIn<Decode> {
 public:
-    Decode(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {
+    Decode(HazardDetectionUnit *hdu) : 
+        hazard_detection_unit(hdu) {
         name = "Decode";
     }
 
@@ -66,24 +66,30 @@ public:
     }
 
     void process_stage() {
-        if (data->is_load())
+        if (data->is_load()) {
             hazard_detection_unit->
                 receive_IdEx_rd(data->rd);
+        }
     }
 private:
     HazardDetectionUnit *hazard_detection_unit;
 };
 class Mem : public SimplePipelineStageLogicMixIn<Mem> {
 public:
-    Mem(Cache *dc) : dcache(dc) {
+    Mem(CacheConcept *dc) : dcache(dc) {
         name = "Mem";
     }
 
     void process_stage() {
-        // ToDo: access cache and send signal to control unit if missed
+        if (data->is_load()) {
+            dcache->access(data->addr);
+        }
+        if (data->is_store()) {
+            dcache->access(data->addr, true);
+        }
     }
 private:
-    Cache *dcache;
+    CacheConcept *dcache;
 };
 
 class Wb : public SimplePipelineStageLogicMixIn<Wb> {

@@ -12,8 +12,10 @@ extern "C" {
 unit createInstrForStageInfo();
 unit sendInstToPipeline();
 unit show_cycle_count();
+unit show_cache_info();
 
 unit read_addr(uint64_t addr);
+unit read_ls_addr(uint64_t addr);
 unit read_type(const int type);
 
 unit read_Rtype(mach_bits rs1, mach_bits rs2, mach_bits rd);

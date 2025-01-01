@@ -245,7 +245,7 @@ gcovr:
 
 generated_definitions/c/riscv_model_$(ARCH).c: $(SAIL_SRCS) model/main.sail Makefile
 	mkdir -p generated_definitions/c
-	$(SAIL) $(SAIL_FLAGS) -O -Oconstant_fold -memo_z3 -c -c_include riscv_prelude.h -c_include riscv_platform.h -c_include Cache/simulator_cache_api.h -c_no_main $(SAIL_SRCS) model/main.sail -o $(basename $@)
+	$(SAIL) $(SAIL_FLAGS) -O -Oconstant_fold -memo_z3 -c -c_include riscv_prelude.h -c_include riscv_platform.h -c_include Perf/perf_api.h -c_no_main $(SAIL_SRCS) model/main.sail -o $(basename $@)
 
 $(SOFTFLOAT_LIBS):
 	$(MAKE) SPECIALIZE_TYPE=$(SOFTFLOAT_SPECIALIZE_TYPE) -C $(SOFTFLOAT_LIBDIR)
@@ -278,14 +278,14 @@ $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o: generated_definitions/c/riscv_model_$(AR
 	$(CC) -g $(C_FLAGS) -c $< -o $@
 
 # 產生 Cache 的 LIB
-CACHE_DIR = c_emulator/Cache
-Cache_LIBDIR = $(CACHE_DIR)/build
-Cache_LIBS = $(Cache_LIBDIR)/cachelib.a
+PERF_DIR = c_emulator/Perf
+PERF_LIBDIR = $(PERF_DIR)/build
+PERF_LIBS = $(PERF_LIBDIR)/perflib.a
 
-$(Cache_LIBS):
-	$(MAKE) -C $(CACHE_DIR)
+$(PERF_LIBS):
+	$(MAKE) -C $(PERF_DIR)
 
-c_emulator/riscv_sim_$(ARCH): $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o $(Cache_LIBS) $(SAIL_OBJS) $(EMULATOR_OBJS) $(SOFTFLOAT_LIBS)
+c_emulator/riscv_sim_$(ARCH): $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o $(PERF_LIBS) $(SAIL_OBJS) $(EMULATOR_OBJS) $(SOFTFLOAT_LIBS)
 	g++ -g $^ $(C_LIBS_WRAPPED) -o $@
 
 # c_emulator/riscv_sim_$(ARCH): generated_definitions/c/riscv_model_$(ARCH).c $(C_INCS) $(C_SRCS) $(SOFTFLOAT_LIBS) Makefile

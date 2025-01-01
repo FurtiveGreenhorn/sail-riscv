@@ -20,8 +20,17 @@ unit show_cycle_count() {
     return UNIT;
 }
 
+unit show_cache_info() {
+    simplePipeline.show_cache_info();
+    return UNIT;
+}
+
 unit read_addr(uint64_t addr) {
     stageInfoInstruction->set_addr(addr);
+    return UNIT;
+}
+unit read_ls_addr(uint64_t addr) {
+    stageInfoInstruction->set_ls_addr(addr);
     return UNIT;
 }
 

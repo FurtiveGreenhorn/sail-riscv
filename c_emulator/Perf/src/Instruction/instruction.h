@@ -26,7 +26,7 @@ enum Instruction_type : unsigned {
 using RegNum = unsigned;
 constexpr unsigned REGISTER_NOT_USED = 2333333333;
 struct Instruction {
-    uint64_t addr;
+    uint64_t addr, ls_addr/*for load or store*/;
     Instruction_type type;
     RegNum rs1, rs2, rd;
     bool taken, is_used;
@@ -35,6 +35,9 @@ struct Instruction {
 
     void set_addr(uint64_t new_addr) {
         addr = new_addr;
+    }
+    void set_ls_addr(uint64_t new_addr) {
+        ls_addr = new_addr;
     }
     void set_Rtype(RegNum new_rs1, RegNum new_rs2, RegNum new_rd) {
         rs1 = new_rs1;
@@ -82,6 +85,9 @@ struct Instruction {
 
     bool is_load() {
         return (INST_lb <= type) && (type <= INST_ld);
+    }
+    bool is_store() {
+        return (INST_sb <= type) && (type <= INST_sd);
     }
     bool is_branch() {
         return (INST_beq <= type) && (type <= INST_bltu);

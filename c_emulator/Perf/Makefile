@@ -16,7 +16,7 @@ SRCS := $(shell find $(SRC_DIR) -type f -name "*.cpp")
 OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 
 # 靜態函式庫輸出檔名
-LIB := $(BUILD_DIR)/cachelib.a
+LIB := $(BUILD_DIR)/perflib.a
 
 .PHONY: all clean
 

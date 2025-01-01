@@ -798,6 +798,7 @@ function htif_store(physaddr(paddr), width, data) = {
         // print_l2_stats();
         /* cache */
         show_cycle_count();
+        show_cache_info();
         htif_done = true;
         //print("payload = " ^ BitStr(cmd[payload]));
         htif_exit_code = (sail_zero_extend(cmd[payload], 64) >> 1);
