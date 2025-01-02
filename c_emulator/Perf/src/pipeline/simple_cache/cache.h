@@ -51,24 +51,7 @@ struct CacheParams {
     using replacement_policy = ReplacementPolicy<NumSets, NumWays>;
 };
 
-// Skip simulation of stall cycles to save simulation time.
-// This is feasible because in a simple 5-stage pipeline,
-// skipping stall cycles does not affect the cycle count result.
-class SkippedStallCycle {
-public:
-    SkippedStallCycle(Clock *clock) : clock(clock) {}
-    void stall(unsigned cycles) {
-        clock->skip_cycle(cycles);
-    }
-private:
-    Clock *clock;
-};
-
-struct NoStall {
-    void stall(unsigned) {}
-};
-
-template<typename Params, typename StallPolicy = NoStall>
+template<typename Params>
 class Cache : public CacheConcept {
 public:
     struct CacheInfo {
@@ -126,7 +109,6 @@ private:
     unsigned hit_cycles;
     ReplacementPolicy repl_policy;
     CacheConcept *next_level_cache;
-    std::unique_ptr<StallPolicy> stall_policy;
 
     std::size_t get_set_index(uint64_t addr) {
         static auto set_mask = Params::num_sets - 1;
@@ -146,12 +128,9 @@ private:
     }
 
 public:
-    Cache(unsigned hit_cycles = 0, 
-          std::unique_ptr<StallPolicy> 
-          stall_policy = std::make_unique<NoStall>()) :
+    Cache(unsigned hit_cycles = 0) :
           sets(Params::num_sets, WaysT(Params::num_ways)), 
-          hit_cycles(hit_cycles),
-          stall_policy(std::move(stall_policy)) {}
+          hit_cycles(hit_cycles) {}
 
     unsigned access(uint64_t addr, 
                     bool is_write = false) override;
@@ -164,8 +143,8 @@ public:
     }
 };
 
-template<typename Params, typename StallPolicy>
-unsigned Cache<Params, StallPolicy>::
+template<typename Params>
+unsigned Cache<Params>::
 access(uint64_t addr, bool is_write) {
     is_write ? ++cache_log.write_access_count :
                ++cache_log.read_access_count;
@@ -196,7 +175,6 @@ access(uint64_t addr, bool is_write) {
     unsigned cycles = hit_cycles;
     if (next_level_cache != nullptr) {
         cycles += next_level_cache->access(addr);
-        stall_policy->stall(cycles);
     }
 
     victim.set_tag(tag);
@@ -207,8 +185,8 @@ access(uint64_t addr, bool is_write) {
     return cycles;
 }
 
-template<typename Params, typename StallPolicy>
-void Cache<Params, StallPolicy>::CacheLog::show(const std::string& name) {
+template<typename Params>
+void Cache<Params>::CacheLog::show(const std::string& name) {
     std::cout << std::setprecision(4) << std::fixed;
     auto get_miss_percentage = 
         [](unsigned miss_count, unsigned access_count) {
@@ -241,3 +219,33 @@ void Cache<Params, StallPolicy>::CacheLog::show(const std::string& name) {
                 << get_miss_percentage(write_miss_count, write_access_count) 
                 << '%' << std::endl;
 }
+
+// Skip simulation of stall cycles to save simulation time.
+// This is feasible because in a simple 5-stage pipeline,
+// skipping stall cycles does not affect the cycle count result.
+class SkippedStallCycle {
+public:
+    SkippedStallCycle(Clock *clock) : clock(clock) {}
+    void stall(unsigned cycles) {
+        clock->skip_cycle(cycles);
+    }
+private:
+    Clock *clock;
+};
+
+template<typename Params, 
+         typename StallPolicy = SkippedStallCycle>
+class L1Cache : public Cache<Params> {
+public:
+    L1Cache(unsigned hit_cycles = 0, 
+            std::unique_ptr<StallPolicy> st_policy = nullptr) :
+        stall_policy(std::move(st_policy)) {}
+    void read(uint64_t addr) {
+        stall_policy.stall(Cache<Params>::access(addr));
+    }
+    void write(uint64_t addr) {
+        stall_policy.stall(Cache<Params>::access(addr), true);
+    }
+private:
+    std::unique_ptr<StallPolicy> stall_policy;
+};

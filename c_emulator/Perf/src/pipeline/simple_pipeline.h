@@ -1,7 +1,12 @@
 #pragma once
 
+#include "simple_cache/cache.h"
 #include "simple_pipeline_unit.h"
 #include <memory>
+
+using IcacheT = L1Cache<CacheParams<128, 2, 64>>;
+using DcacheT = L1Cache<CacheParams<64, 4, 64>>;
+using L2cacheT = Cache<CacheParams<256, 8, 64>>;
 
 class SimplePipeline {
 public:
@@ -15,7 +20,10 @@ private:
     Instruction_pool<INST_POOL_SIZE> inst_pool;
     Clock clock;
     HazardDetectionUnit hazard_dectection_unit;
-    std::unique_ptr<CacheConcept> icache, dcache, l2cache, memory;
+    IcacheT icache;
+    DcacheT dcache;
+    L2cacheT l2cache;
+    Memory memory;
     // pipeline stage
     Fetch fetch;
     Decode decode;
