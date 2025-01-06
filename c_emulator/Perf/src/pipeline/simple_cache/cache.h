@@ -23,12 +23,14 @@ public:
 // This is a placeholder and should be replaced with a proper implementation.
 class Memory : public CacheConcept {
 public:
-    Memory() = default;
+    Memory(unsigned cycles) : cycles(cycles) {}
     unsigned access(uint64_t addr, bool is_write) override {
         return 10;
     }
     void set_next_level_cache(CacheConcept *nlc) override {};
     void show(const std::string& name) override {};
+private:
+    unsigned cycles;
 };
 
 template<
@@ -240,11 +242,10 @@ public:
     L1Cache(unsigned hit_cycles = 0, 
             std::unique_ptr<StallPolicy> st_policy = nullptr) :
         stall_policy(std::move(st_policy)) {}
-    void read(uint64_t addr) {
-        stall_policy.stall(Cache<Params>::access(addr));
-    }
-    void write(uint64_t addr) {
-        stall_policy.stall(Cache<Params>::access(addr), true);
+    unsigned access(uint64_t addr, bool is_write = false) override {
+        unsigned cycles = Cache<Params>::access(addr, is_write);
+        stall_policy->stall(cycles);
+        return cycles;
     }
 private:
     std::unique_ptr<StallPolicy> stall_policy;

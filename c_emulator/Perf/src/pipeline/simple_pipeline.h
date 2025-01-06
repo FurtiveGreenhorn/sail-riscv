@@ -9,6 +9,7 @@ using DcacheT = L1Cache<CacheParams<64, 4, 64>>;
 using L2cacheT = Cache<CacheParams<256, 8, 64>>;
 
 class SimplePipeline {
+    unsigned instruction_count = 0;
 public:
     SimplePipeline();
     void read_inst(Instruction *inst);

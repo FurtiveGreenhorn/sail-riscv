@@ -10,7 +10,7 @@ SimplePipeline::SimplePipeline() :
     icache(0, std::make_unique<SkippedStallCycle>(&clock)),
     dcache(0, std::make_unique<SkippedStallCycle>(&clock)),
     l2cache(4),
-    memory(),
+    memory(10),
     // pipeline stage
     fetch(&icache),
     decode(&hazard_dectection_unit),
@@ -30,6 +30,7 @@ SimplePipeline::SimplePipeline() :
 
 void SimplePipeline::read_inst(Instruction *inst) {
     pc_reg.receive(inst);
+    ++instruction_count;
     clock.tick();
     // Ensure the previous PC is consumed 
     // before reading the next instruction
@@ -42,6 +43,9 @@ Instruction *SimplePipeline::create_inst() {
 }
 
 void SimplePipeline::show_cycle_count() {
+    std::cout << "Instruction Count: "
+              << instruction_count
+              << std::endl;
     std::cout << "Cycle Count: " 
               << clock.get_cycle_count()
               << std::endl;
