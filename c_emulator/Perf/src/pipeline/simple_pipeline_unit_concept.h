@@ -13,7 +13,6 @@ public:
     // receive data from previous pipeline register
     void receive(Instruction *input_data) {
         assert(input_data != nullptr);
-        assert(input_data->is_used == true);
         data = input_data;
         if(logged) {
             std::cout << name << " received " 
@@ -111,7 +110,6 @@ public:
             }
             return;
         }
-        assert(data_in->is_used == true);
         data = data_in;
         if (logged) {
             std::cout << name 

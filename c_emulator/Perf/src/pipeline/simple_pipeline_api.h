@@ -16,14 +16,19 @@ unit show_cache_info();
 
 unit read_addr(uint64_t addr);
 unit read_ls_addr(uint64_t addr);
+
+unit read_rs_val(uint64_t rs1_val, uint64_t rs2_val);
+// unit read_rs1_val(uint64_t rs1_val);
+// unit read_rs2_val(uint64_t rs2_val);
+
 unit read_type(const int type);
 
-unit read_Rtype(mach_bits rs1, mach_bits rs2, mach_bits rd);
+unit read_Rtype(mach_bits rs2, mach_bits rs1, mach_bits rd);
 unit read_Itype(mach_bits rs1, mach_bits rd);
 
 unit read_Itype_xRs1(mach_bits rd);
 unit read_Itype_xRs1xRd();
-unit read_SBtype(mach_bits rs1, mach_bits rs2);
+unit read_SBtype(mach_bits rs2, mach_bits rs1);
 unit read_UJtype(mach_bits rd);
 
 unit read_taken(bool taken);

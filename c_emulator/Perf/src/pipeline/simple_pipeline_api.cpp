@@ -34,7 +34,22 @@ unit read_ls_addr(uint64_t addr) {
     return UNIT;
 }
 
-unit read_Rtype(mach_bits rs1, mach_bits rs2, mach_bits rd) {
+unit read_rs_val(uint64_t rs1_val, uint64_t rs2_val) {
+    stageInfoInstruction->set_rs_val(rs1_val, rs2_val);
+    return UNIT;
+}
+
+// unit read_rs1_val(uint64_t rs1_val) {
+//     stageInfoInstruction->set_rs1_val(rs1_val);
+//     return UNIT;
+// }
+
+// unit read_rs2_val(uint64_t rs2_val) {
+//     stageInfoInstruction->set_rs1_val(rs1_val);
+//     return UNIT;
+// }
+
+unit read_Rtype(mach_bits rs2, mach_bits rs1, mach_bits rd) {
     stageInfoInstruction->set_Rtype(
         rs1, rs2, rd);
     return UNIT;
@@ -54,7 +69,7 @@ unit read_Itype_xRs1xRd() {
         REGISTER_NOT_USED, REGISTER_NOT_USED);
     return UNIT;
 }
-unit read_SBtype(mach_bits rs1, mach_bits rs2) {
+unit read_SBtype(mach_bits rs2, mach_bits rs1) {
     stageInfoInstruction->set_SBtype(
         rs1, rs2);
     return UNIT;

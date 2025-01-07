@@ -2,6 +2,7 @@
 #include "simple_pipeline.h"
 #include "simple_cache/cache.h"
 #include "simple_pipeline_unit.h"
+#include "stall_policy.h"
 
 SimplePipeline::SimplePipeline() :
     // hazard_detection_unit
@@ -14,7 +15,7 @@ SimplePipeline::SimplePipeline() :
     // pipeline stage
     fetch(&icache),
     decode(&hazard_dectection_unit),
-    execute(&hazard_dectection_unit),
+    execute(&hazard_dectection_unit, std::make_shared<SkippedStallCycle>(&clock)),
     mem(&dcache),
     // pipeline reg
     pc_reg(clock, nullptr, &fetch),

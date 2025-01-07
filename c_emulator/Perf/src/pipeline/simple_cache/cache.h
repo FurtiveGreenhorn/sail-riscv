@@ -1,13 +1,14 @@
 #pragma once
 
+#include <type_traits>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <vector>
 #include <string>
-#include "../clock.h"
 #include "replacement_policy/Tree-PLRU.h"
+#include "../stall_policy.h"
 
 class CacheConcept {
 public:
@@ -222,23 +223,15 @@ void Cache<Params>::CacheLog::show(const std::string& name) {
                 << '%' << std::endl;
 }
 
-// Skip simulation of stall cycles to save simulation time.
-// This is feasible because in a simple 5-stage pipeline,
-// skipping stall cycles does not affect the cycle count result.
-class SkippedStallCycle {
-public:
-    SkippedStallCycle(Clock *clock) : clock(clock) {}
-    void stall(unsigned cycles) {
-        clock->skip_cycle(cycles);
-    }
-private:
-    Clock *clock;
-};
+template<typename T>
+using has_stall = std::is_invocable_r<void, decltype(&T::stall), T, unsigned>;
 
 template<typename Params, 
          typename StallPolicy = SkippedStallCycle>
 class L1Cache : public Cache<Params> {
 public:
+    static_assert(has_stall<StallPolicy>::value, "StallPolicy must implement void stall(unsigned cycles)");
+
     L1Cache(unsigned hit_cycles = 0, 
             std::unique_ptr<StallPolicy> st_policy = nullptr) :
         stall_policy(std::move(st_policy)) {}

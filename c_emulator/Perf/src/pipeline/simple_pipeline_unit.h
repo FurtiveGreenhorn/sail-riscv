@@ -2,8 +2,11 @@
 
 #include "../Instruction/instruction_pool.h"
 #include "../Instruction/instruction.h"
+#include "simple_execution_unit.h"
 #include "simple_pipeline_unit_concept.h"
 #include "simple_cache/cache.h"
+#include "stall_policy.h"
+#include <memory>
 
 class Fetch;
 class PCReg;
@@ -18,16 +21,14 @@ public:
     void receive_IfId_rs(RegNum rs1, RegNum rs2);
     
 private:
-    bool load_use_detection_ready = false;
     RegNum IdExRegRd, IfIdRegRs1, IfIdRegRs2;
     PCReg *pc_reg;
     IfIdReg *if_id_reg;
     IdExReg *id_ex_reg;
     bool logged = false;
 
-    bool detect_load_use_hazard();
-    void send_stall_for_load_use_hazard();
     void handle_load_use_hazard();
+    void check_hazard();
 };
 
 class Fetch : public SimplePipelineStageLogicMixIn<Fetch> {
@@ -38,6 +39,8 @@ public:
     }
     void process_stage() {
         icache->access(data->addr);
+        if (logged)
+            std::cout << "fetch addr: " << data->addr << std::endl;
     }
 private:
     CacheConcept *icache;
@@ -53,15 +56,28 @@ public:
         // send rs
         if (data == nullptr)
             return;
-        hazard_detection_unit->
-            receive_IfId_rs(data->rs1, data->rs2);
+        send_rs();
     }
 private:
     HazardDetectionUnit *hazard_detection_unit;
+
+    void send_rs() {
+        if (data->is_load()) {
+            hazard_detection_unit->
+                receive_IfId_rs(data->rs1, data->rs2);
+        }
+    }
 };
+
 class Execute: public SimplePipelineStageLogicMixIn<Execute> {
 public:
-    Execute(HazardDetectionUnit *hdu) : hazard_detection_unit(hdu) {
+    Execute(HazardDetectionUnit *hdu, 
+            std::shared_ptr<SkippedStallCycle> stall_policy) : 
+                hazard_detection_unit(hdu),
+                stall_policy(stall_policy), 
+                int_alu(stall_policy), 
+                mul_unit(stall_policy), 
+                div_unit(stall_policy) {
         name = "Execute";
     }
 
@@ -70,9 +86,28 @@ public:
             hazard_detection_unit->
                 receive_IdEx_rd(data->rd);
         }
+        // a simple implementation of execution unit
+        switch (data->get_execution_unit_type()) {
+            case ExecutionUnitType::INT_ALU:
+                int_alu.execute(data);
+            break;
+            case ExecutionUnitType::MUL_UNIT:
+                mul_unit.execute(data);
+            break;
+            case ExecutionUnitType::DIV_UNIT:
+                div_unit.execute(data);
+            break;
+            case ExecutionUnitType::NONE:
+                // Handle NONE case if necessary
+            break;
+        }
     }
 private:
     HazardDetectionUnit *hazard_detection_unit;
+    std::shared_ptr<SkippedStallCycle> stall_policy;
+    IntegerALU int_alu;
+    MultiplierUnit mul_unit;
+    DividerUnit div_unit;
 };
 class Mem : public SimplePipelineStageLogicMixIn<Mem> {
 public:
@@ -181,14 +216,10 @@ private:
 
 // HazardDetectionUnit function implementation
 inline void HazardDetectionUnit::handle_load_use_hazard() {
-    if (detect_load_use_hazard() == true)
-        send_stall_for_load_use_hazard();
-    load_use_detection_ready = false;
-}
-
-inline void HazardDetectionUnit::send_stall_for_load_use_hazard() {
     if (logged)
         std::cout << "detect hazard !" << std::endl;
+    // send stall signal to IF/ID & PC
+    // send flush signal to ID/EX
     pc_reg->receive_stall();
     if_id_reg->receive_stall();
     id_ex_reg->flush();
@@ -197,23 +228,28 @@ inline void HazardDetectionUnit::send_stall_for_load_use_hazard() {
     }
 }
 
-inline bool HazardDetectionUnit::detect_load_use_hazard() {
-    return (IdExRegRd == IfIdRegRs1) || (IdExRegRd == IfIdRegRs2);
-}
-
 inline void HazardDetectionUnit::receive_IdEx_rd(RegNum rd) {
     IdExRegRd = rd;
-    if (load_use_detection_ready)
-        handle_load_use_hazard();
-    else
-        load_use_detection_ready = true;
+    check_hazard();
 }
 
 inline void HazardDetectionUnit::receive_IfId_rs(RegNum rs1, RegNum rs2) {
     IfIdRegRs1 = rs1;
     IfIdRegRs2 = rs2;
-    if (load_use_detection_ready)
-        handle_load_use_hazard();
-    else
+    check_hazard();
+}
+
+inline void HazardDetectionUnit::check_hazard() {
+    static bool load_use_detection_ready = false;
+
+    if (load_use_detection_ready == false) {
         load_use_detection_ready = true;
+        return;
+    }
+
+    load_use_detection_ready = false;
+    if ((IdExRegRd != IfIdRegRs1) && (IdExRegRd != IfIdRegRs2))
+        return;
+    
+    handle_load_use_hazard();
 }
