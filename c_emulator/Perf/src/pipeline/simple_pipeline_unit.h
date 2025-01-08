@@ -2,11 +2,14 @@
 
 #include "../Instruction/instruction_pool.h"
 #include "../Instruction/instruction.h"
+#include "latency_log.h"
 #include "simple_execution_unit.h"
 #include "simple_pipeline_unit_concept.h"
 #include "simple_cache/cache.h"
 #include "stall_policy.h"
 #include <memory>
+
+namespace pipeline_simulator {
 
 class Fetch;
 class PCReg;
@@ -81,27 +84,10 @@ public:
         name = "Execute";
     }
 
-    void process_stage() {
-        if (data->is_load()) {
-            hazard_detection_unit->
-                receive_IdEx_rd(data->rd);
-        }
-        // a simple implementation of execution unit
-        switch (data->get_execution_unit_type()) {
-            case ExecutionUnitType::INT_ALU:
-                int_alu.execute(data);
-            break;
-            case ExecutionUnitType::MUL_UNIT:
-                mul_unit.execute(data);
-            break;
-            case ExecutionUnitType::DIV_UNIT:
-                div_unit.execute(data);
-            break;
-            case ExecutionUnitType::NONE:
-                // Handle NONE case if necessary
-            break;
-        }
-    }
+    void process_stage();
+    const LatencyInfo *
+    get_latency_info(ExecutionUnitType unit) const;
+
 private:
     HazardDetectionUnit *hazard_detection_unit;
     std::shared_ptr<SkippedStallCycle> stall_policy;
@@ -214,42 +200,4 @@ private:
     Instruction_pool<INST_POOL_SIZE> *inst_pool;
 };
 
-// HazardDetectionUnit function implementation
-inline void HazardDetectionUnit::handle_load_use_hazard() {
-    if (logged)
-        std::cout << "detect hazard !" << std::endl;
-    // send stall signal to IF/ID & PC
-    // send flush signal to ID/EX
-    pc_reg->receive_stall();
-    if_id_reg->receive_stall();
-    id_ex_reg->flush();
-    if (logged) {
-        std::cout << "Send flush to ID/EX !" << std::endl;
-    }
-}
-
-inline void HazardDetectionUnit::receive_IdEx_rd(RegNum rd) {
-    IdExRegRd = rd;
-    check_hazard();
-}
-
-inline void HazardDetectionUnit::receive_IfId_rs(RegNum rs1, RegNum rs2) {
-    IfIdRegRs1 = rs1;
-    IfIdRegRs2 = rs2;
-    check_hazard();
-}
-
-inline void HazardDetectionUnit::check_hazard() {
-    static bool load_use_detection_ready = false;
-
-    if (load_use_detection_ready == false) {
-        load_use_detection_ready = true;
-        return;
-    }
-
-    load_use_detection_ready = false;
-    if ((IdExRegRd != IfIdRegRs1) && (IdExRegRd != IfIdRegRs2))
-        return;
-    
-    handle_load_use_hazard();
-}
+} // namespace pipeline_simulator

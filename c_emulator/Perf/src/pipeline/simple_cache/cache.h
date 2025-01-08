@@ -9,13 +9,16 @@
 #include <string>
 #include "replacement_policy/Tree-PLRU.h"
 #include "../stall_policy.h"
+#include "../latency_log.h"
+
+namespace pipeline_simulator {
 
 class CacheConcept {
 public:
     virtual unsigned access(uint64_t addr, 
                             bool is_write = false) = 0;
     virtual void set_next_level_cache(CacheConcept *nlc) = 0;
-    virtual void show(const std::string& name) = 0;
+    virtual void show(const std::string& name) const = 0;
     virtual ~CacheConcept() = default;
 };
 
@@ -29,7 +32,7 @@ public:
         return 10;
     }
     void set_next_level_cache(CacheConcept *nlc) override {};
-    void show(const std::string& name) override {};
+    void show(const std::string& name) const override {};
 private:
     unsigned cycles;
 };
@@ -99,7 +102,7 @@ public:
             write_miss_count(0),
             writeback_count(0) {}
 
-        void show(const std::string& name);
+        void show(const std::string& name) const;
         unsigned read_access_count;
         unsigned read_miss_count;
         unsigned write_access_count;
@@ -141,7 +144,7 @@ public:
     void set_next_level_cache(CacheConcept *nlc) override {
         next_level_cache = nlc;
     }
-    void show(const std::string& name) override {
+    void show(const std::string& name) const override {
         cache_log.show(name);
     }
 };
@@ -189,7 +192,7 @@ access(uint64_t addr, bool is_write) {
 }
 
 template<typename Params>
-void Cache<Params>::CacheLog::show(const std::string& name) {
+void Cache<Params>::CacheLog::show(const std::string& name) const {
     std::cout << std::setprecision(4) << std::fixed;
     auto get_miss_percentage = 
         [](unsigned miss_count, unsigned access_count) {
@@ -223,23 +226,27 @@ void Cache<Params>::CacheLog::show(const std::string& name) {
                 << '%' << std::endl;
 }
 
-template<typename T>
-using has_stall = std::is_invocable_r<void, decltype(&T::stall), T, unsigned>;
-
-template<typename Params, 
-         typename StallPolicy = SkippedStallCycle>
+template<typename Params>
 class L1Cache : public Cache<Params> {
 public:
-    static_assert(has_stall<StallPolicy>::value, "StallPolicy must implement void stall(unsigned cycles)");
-
     L1Cache(unsigned hit_cycles = 0, 
-            std::unique_ptr<StallPolicy> st_policy = nullptr) :
+            std::unique_ptr<SkippedStallCycle> st_policy = nullptr) :
         stall_policy(std::move(st_policy)) {}
+
     unsigned access(uint64_t addr, bool is_write = false) override {
         unsigned cycles = Cache<Params>::access(addr, is_write);
         stall_policy->stall(cycles);
+        latency_info.update(cycles);
         return cycles;
     }
+
+    const LatencyInfo& get_latency_info() const {
+        return latency_info;
+    }
+
 private:
-    std::unique_ptr<StallPolicy> stall_policy;
+    std::unique_ptr<SkippedStallCycle> stall_policy;
+    LatencyInfo latency_info;
 };
+
+} // namespace pipeline_simulator

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <vector>
 
+namespace pipeline_simulator {
+
 class Clockable {
 public:
     virtual void clock_start() = 0;
@@ -11,6 +13,8 @@ public:
 
 class Clock {
 public:
+    using Cycles = unsigned;
+
     Clock() : cycle_counter(0) {}
     void tick() { 
         if(logged) {
@@ -28,7 +32,7 @@ public:
     void registerClockable(Clockable* clockable) {
         clockableObjects.push_back(clockable);
     }
-    unsigned get_cycle_count() {
+    Cycles get_cycle_count() const {
         //
         return cycle_counter + 4;
     }
@@ -41,3 +45,5 @@ private:
     unsigned cycle_counter;
     bool logged = false;
 };
+
+} // namespace pipeline_simulator

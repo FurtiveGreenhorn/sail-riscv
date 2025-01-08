@@ -2,6 +2,8 @@
 
 #include "clock.h"
 
+namespace pipeline_simulator {
+
 // Skip simulation of stall cycles to save simulation time.
 // This is feasible because in a simple 5-stage pipeline,
 // skipping stall cycles does not affect the cycle count result.
@@ -14,3 +16,5 @@ public:
 private:
     Clock *clock;
 };
+
+} // namespace pipeline_simulator

@@ -2,6 +2,8 @@
 #include "simple_pipeline_api.h"
 #include "sail.h"
 
+using namespace pipeline_simulator;
+
 static SimplePipeline simplePipeline;
 static Instruction *stageInfoInstruction;
 
@@ -15,8 +17,8 @@ unit sendInstToPipeline() {
     return UNIT;
 }
 
-unit show_cycle_count() {
-    simplePipeline.show_cycle_count();
+unit show_performance() {
+    simplePipeline.show_performance();
     return UNIT;
 }
 

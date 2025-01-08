@@ -1,8 +1,11 @@
+#include <iostream>
 #include <memory>
 #include "simple_pipeline.h"
 #include "simple_cache/cache.h"
 #include "simple_pipeline_unit.h"
 #include "stall_policy.h"
+
+namespace pipeline_simulator {
 
 SimplePipeline::SimplePipeline() :
     // hazard_detection_unit
@@ -43,19 +46,64 @@ Instruction *SimplePipeline::create_inst() {
     return inst_pool.newInst();
 }
 
-void SimplePipeline::show_cycle_count() {
+void SimplePipeline::show_performance() const {
     std::cout << "Instruction Count: "
               << instruction_count
               << std::endl;
+
+    auto cycle_count = clock.get_cycle_count();
     std::cout << "Cycle Count: " 
-              << clock.get_cycle_count()
+              << cycle_count
               << std::endl;
+
+    auto cache_latency = 
+        icache.get_latency_info().get_total_latency() + 
+        dcache.get_latency_info().get_total_latency();
+
+    std::cout << "Latency by cache: "
+              << cache_latency
+              << std::endl;
+
+    auto mul_unit_latency = 
+        execute.get_latency_info(ExecutionUnitType::MUL_UNIT)
+               ->get_total_latency();
+    auto div_unit_latency = 
+        execute.get_latency_info(ExecutionUnitType::DIV_UNIT)
+               ->get_total_latency();
+
+    std::cout << "Latency by Multiplier Unit: "
+            << mul_unit_latency
+            << std::endl;
+
+    std::cout << "Latency by Divider Unit: "
+              << div_unit_latency
+              << std::endl;
+
+    std::cout << std::setprecision(4) << std::fixed;
+
+    std::cout << "CPI: "
+              << 100.0 * cycle_count / instruction_count
+              << '%' << std::endl;
+
+    std::cout << "Cache Latency in Total Cycles: "
+              << 100.0 * cache_latency / cycle_count
+              << '%' << std::endl;
+
+    std::cout << "Multiplier Unit Latency in Total Cycles: "
+              << 100.0 * mul_unit_latency / cycle_count
+              << '%' << std::endl;
+
+    std::cout << "Divider Unit Latency in Total Cycles: "
+              << 100.0 * div_unit_latency / cycle_count
+              << '%' << std::endl;
 }
 
-void SimplePipeline::show_cache_info() {
+void SimplePipeline::show_cache_info() const {
     icache.show("L1 Icache");
     std::cout << std::endl << std::endl;
     dcache.show("L1 Dcache");
     std::cout << std::endl << std::endl;
     l2cache.show("L2 cache");
 }
+
+} // namespace pipeline_simulator

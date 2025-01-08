@@ -4,6 +4,8 @@
 #include <cassert>
 #include <iostream>
 
+namespace pipeline_simulator {
+
 #define INST_POOL_SIZE 10
 
 template<auto size>
@@ -38,3 +40,5 @@ private:
     std::size_t start, end;
     bool logged = false;
 };
+
+} // namespace performance

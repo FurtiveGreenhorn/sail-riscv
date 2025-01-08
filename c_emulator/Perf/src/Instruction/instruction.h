@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <cassert>
 
+namespace pipeline_simulator {
+
 // Enum to represent different instruction types
 enum Instruction_type : unsigned {
     // INST_unknown is used to represent instructions whose type has not yet been determined.
@@ -23,7 +25,6 @@ enum Instruction_type : unsigned {
     INST_fence, INST_ebreak, INST_ecall,
     // arithmetic
     INST_add, INST_addi, INST_sub,
-    // rv64i
     INST_addw, INST_addiw, INST_subw,
     // logic
     INST_and, INST_or, INST_xor,
@@ -32,7 +33,6 @@ enum Instruction_type : unsigned {
     INST_sll, INST_sra, 
     INST_slli, INST_srai,
     INST_srl, INST_srli,
-    // rv64i
     INST_sllw, INST_sraw,
     INST_slliw,INST_sraiw,
     INST_srlw, INST_srliw,
@@ -49,7 +49,6 @@ enum Instruction_type : unsigned {
     // load
     INST_lb, INST_lbu,
     INST_lh, INST_lhu,
-    // rv64i
     INST_lw, INST_lwu, INST_ld, 
     // store
     INST_sb, INST_sh, INST_sw, INST_sd,
@@ -60,15 +59,12 @@ enum Instruction_type : unsigned {
     INST_mul,
     // upper 32 bits
     INST_mulh, INST_mulhu, INST_mulhsu,
-    // rv64m
     INST_mulw,
     // division
     INST_div, INST_divu,
-    // rv64m
     INST_divw, INST_divuw,
     // remainder
     INST_rem, INST_remu,
-    // rv64m
     INST_remw, INST_remuw,
 
     // ------------------------- Privileged Architecture -------------------------
@@ -237,3 +233,5 @@ ExecutionUnitType Instruction::get_execution_unit_type() {
         break;
     }
 }
+
+} // namespace pipeline_simulator

@@ -1,8 +1,11 @@
 #pragma once
 
 #include "simple_cache/cache.h"
+#include "simple_cache/replacement_policy/Tree-PLRU.h"
 #include "simple_pipeline_unit.h"
 #include <memory>
+
+namespace pipeline_simulator {
 
 using IcacheT = L1Cache<CacheParams<128, 2, 64>>;
 using DcacheT = L1Cache<CacheParams<64, 4, 64>>;
@@ -14,8 +17,8 @@ public:
     SimplePipeline();
     void read_inst(Instruction *inst);
     Instruction *create_inst();
-    void show_cycle_count();
-    void show_cache_info();
+    void show_performance() const;
+    void show_cache_info() const;
 
 private:
     Instruction_pool<INST_POOL_SIZE> inst_pool;
@@ -39,3 +42,5 @@ private:
     MemWbReg mem_wb_reg;
     RetireReg retire_reg;
 };
+
+} // namespace pipeline_simulator

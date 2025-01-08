@@ -4,6 +4,8 @@
 #include <array>
 #include <bitset>
 
+namespace pipeline_simulator {
+
 template<std::size_t NumSets, std::size_t NumWays>
 class TreePlru {
     using TreeT = std::bitset<NumWays>;
@@ -53,3 +55,5 @@ void TreePlru<NumSets, NumWays>::touch(
             tree.reset(next_iter) : tree.set(next_iter);
     }
 }
+
+} // namespace pipeline_simulator

@@ -11,7 +11,7 @@ extern "C" {
 
 unit createInstrForStageInfo();
 unit sendInstToPipeline();
-unit show_cycle_count();
+unit show_performance();
 unit show_cache_info();
 
 unit read_addr(uint64_t addr);

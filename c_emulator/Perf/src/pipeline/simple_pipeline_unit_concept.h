@@ -6,6 +6,8 @@
 #include "../Instruction/instruction.h"
 #include "clock.h"
 
+namespace pipeline_simulator {
+
 template<typename DerivedT, typename DataT = Instruction>
 class SimplePipelineStageLogicMixIn {
 public:
@@ -152,3 +154,5 @@ protected:
     std::string name;
     bool logged = false;
 };
+
+} // namespace pipeline_simulator
