@@ -53,16 +53,16 @@ import os
 import re
 
 # 定義 result 資料夾路徑
-result_folder = "./result"
-output_file = "./result/results.txt"
+result_folder = "./results"
+output_file = "./results_summary/results.txt"
 
 # 定義正則表達式以提取所需數據
 patterns = {
     "Instruction Count": r"Instruction Count: (\d+)",
     "Cycle Count": r"Cycle Count: (\d+)",
-    "Icache miss rate": r"L1 Icache.*?miss rate: ([\d\.]+)%",
-    "Dcache miss rate": r"L1 Dcache.*?miss rate: ([\d\.]+)%",
-    "L2 cache miss rate": r"L2 cache.*?miss rate: ([\d\.]+)%",
+    "Icache miss rate": r"L1 Icache.*?miss rate: ([\d\.]+%)",
+    "Dcache miss rate": r"L1 Dcache.*?miss rate: ([\d\.]+%)",
+    "L2 cache miss rate": r"L2 cache.*?miss rate: ([\d\.]+%)",
     
     # 新增的正則表達式
     "Latency by cache": r"Latency by cache: (\d+)",

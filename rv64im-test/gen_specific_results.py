@@ -54,7 +54,7 @@ def get_user_choice(num_fields):
         except ValueError:
             print("Invalid input. Please enter a valid number.")
 
-def generate_output_file(field, results, output_dir="output"):
+def generate_output_file(field, results, output_dir="results_summary"):
     """
     Generates an output file for the specified field containing data from all results.
     """
@@ -77,7 +77,7 @@ def generate_output_file(field, results, output_dir="output"):
 
 def main():
     # Path to the input data file
-    input_file = 'result/results.txt'
+    input_file = 'results_summary/results.txt'
 
     # Check if the input file exists
     if not os.path.isfile(input_file):

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # 設定來源目錄與結果輸出目錄
-INPUT_DIR="rv64im-test/polyim_output"
-OUTPUT_DIR="result"
-SIMULATOR="c_emulator/riscv_sim_RV64"
+INPUT_DIR="polyim_output"
+OUTPUT_DIR="results"
+SIMULATOR="../c_emulator/riscv_sim_RV64"
 
 # 檢查輸出目錄是否存在，若不存在則建立
 if [ ! -d "$OUTPUT_DIR" ]; then
