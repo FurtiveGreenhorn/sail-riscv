@@ -22,7 +22,7 @@ enum instruction_type = {
 // pipeline api
 val createInstrForStageInfo = pure {c: "createInstrForStageInfo"} : unit -> unit
 val sendInstToPipeline = pure {c: "sendInstToPipeline"} : unit -> unit
-val show_cycle_count = pure {c: "show_cycle_count"} : unit -> unit
+val show_performance = pure {c: "show_performance"} : unit -> unit
 val show_cache_info = pure {c: "show_cache_info"} : unit -> unit
 val read_addr = pure {c: "read_addr"} : xlenbits -> unit
 val read_ls_addr = pure {c: "read_ls_addr"} : xlenbits -> unit

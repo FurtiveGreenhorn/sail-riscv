@@ -797,7 +797,7 @@ function htif_store(physaddr(paddr), width, data) = {
         // print_dc_stats();
         // print_l2_stats();
         /* cache */
-        show_cycle_count();
+        show_performance();
         show_cache_info();
         htif_done = true;
         //print("payload = " ^ BitStr(cmd[payload]));
