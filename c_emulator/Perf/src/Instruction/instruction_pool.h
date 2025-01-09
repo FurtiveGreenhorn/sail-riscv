@@ -32,6 +32,9 @@ public:
         }
     }
     Instruction *getBubble() {
+        if (logged) {
+            std::cout << "Bubble created !" << std::endl;
+        }
         return &bubble;
     }
 private:

@@ -301,7 +301,7 @@ mapping clause encdec = RTYPE(rs2, rs1, rd, RISCV_SRA)  <-> 0b0100000 @ rs2 @ rs
 
 function clause execute (RTYPE(rs2, rs1, rd, op)) = {
   // for pipeline
-  read_Rtype(rs1, rs2, rd);
+  read_Rtype(rs2, rs1, rd);
   match op {
     RISCV_ADD  => read_type(INST_add),
     RISCV_SLT  => read_type(INST_slt),
@@ -556,7 +556,7 @@ mapping clause encdec = RTYPEW(rs2, rs1, rd, RISCV_SRAW)
 
 function clause execute (RTYPEW(rs2, rs1, rd, op)) = {
   // for pipeline
-  read_Rtype(rs1, rs2, rd);
+  read_Rtype(rs2, rs1, rd);
   match op {
     RISCV_ADDW => read_type(INST_addw),
     RISCV_SUBW => read_type(INST_subw),
@@ -764,7 +764,7 @@ mapping clause encdec = MRET()
 
 function clause execute MRET() = {
   // for pipeline
-  read_type(INST_privilege);
+  read_type(INST_mret);
   // for pipeline
   if   cur_privilege != Machine
   then { handle_illegal(); RETIRE_FAIL }
@@ -786,7 +786,7 @@ mapping clause encdec = SRET()
 
 function clause execute SRET() = {
   // for pipeline
-  read_type(INST_privilege);
+  read_type(INST_sret);
   // for pipeline
   let sret_illegal : bool = match cur_privilege {
     User       => true,
@@ -827,7 +827,7 @@ mapping clause encdec = WFI()
 
 function clause execute WFI() = {
   // for pipeline
-  read_type(INST_privilege);
+  read_type(INST_wfi);
   // for pipeline
   match cur_privilege {
     Machine    => { platform_wfi(); RETIRE_SUCCESS },
@@ -847,7 +847,7 @@ mapping clause encdec = SFENCE_VMA(rs1, rs2)
 
 function clause execute SFENCE_VMA(rs1, rs2) = {
   // for pipeline
-  read_type(INST_privilege);
+  read_type(INST_sfence_vma);
   // for pipeline
   let addr : option(xlenbits) = if rs1 == 0b00000 then None() else Some(X(rs1));
   let asid : option(xlenbits) = if rs2 == 0b00000 then None() else Some(X(rs2));
