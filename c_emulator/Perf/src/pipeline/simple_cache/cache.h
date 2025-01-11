@@ -231,7 +231,7 @@ class L1Cache : public Cache<Params> {
 public:
     L1Cache(unsigned hit_cycles = 0, 
             std::unique_ptr<SkippedStallCycle> st_policy = nullptr) :
-        stall_policy(std::move(st_policy)) {}
+        Cache<Params>(hit_cycles), stall_policy(std::move(st_policy)) {}
 
     unsigned access(uint64_t addr, bool is_write = false) override {
         unsigned cycles = Cache<Params>::access(addr, is_write);
