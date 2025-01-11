@@ -7,3 +7,8 @@ _sbuild/
 *.o
 *.a
 /z3_problems
+testbench/mibench_results/
+testbench/polybench_results/
+testbench/results_summary/
+testbench/results_detail/
+c_emulator/riscv_sim_RV64

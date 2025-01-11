@@ -1243,11 +1243,11 @@ int main(int argc, char **argv)
 #else
   uint64_t entry = load_sail(initial_elf_file, /*main_file=*/true);
 #endif
-  /* Load any additional ELF files into memory */
-  for (int i = files_start + 1; i < argc; i++) {
-    fprintf(stdout, "Loading additional ELF file %s.\n", argv[i]);
-    (void)load_sail(argv[i], /*main_file=*/false);
-  }
+  // /* Load any additional ELF files into memory */
+  // for (int i = files_start + 1; i < argc; i++) {
+  //   fprintf(stdout, "Loading additional ELF file %s.\n", argv[i]);
+  //   (void)load_sail(argv[i], /*main_file=*/false);
+  // }
 
   /* initialize spike before sail so that we can access the device-tree blob,
    * until we roll our own.
