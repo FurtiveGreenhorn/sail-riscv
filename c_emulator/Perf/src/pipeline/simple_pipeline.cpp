@@ -11,8 +11,8 @@ SimplePipeline::SimplePipeline() :
     // hazard_detection_unit
     hazard_dectection_unit(&pc_reg, &if_id_reg, &id_ex_reg),
     // cache
-    icache(1, std::make_unique<SkippedStallCycle>(&clock)),
-    dcache(1, std::make_unique<SkippedStallCycle>(&clock)),
+    icache(0, std::make_unique<SkippedStallCycle>(&clock)),
+    dcache(0, std::make_unique<SkippedStallCycle>(&clock)),
     l2cache(4),
     memory(10),
     // pipeline stage
