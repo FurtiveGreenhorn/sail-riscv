@@ -12,8 +12,8 @@ if [ ! -d "$RESULT_DIR" ]; then
   mkdir "$RESULT_DIR"
 fi  # 關閉 if 區塊
 
-# echo "running basicmath_small..."
-# $SIMULATOR "${MIBENCH_DIR}/automotive/basicmath/basicmath_small"  > "${RESULT_DIR}/basicmath_small.log" 2>&1
+echo "running basicmath_small..."
+$SIMULATOR "${MIBENCH_DIR}/automotive/basicmath/basicmath_small"  > "${RESULT_DIR}/basicmath_small.log" 2>&1
 
 echo "running bitcount..."
 $SIMULATOR "${MIBENCH_DIR}/automotive/bitcount/bitcnts" 75000 > "${RESULT_DIR}/bitcnts.log" 2>&1
