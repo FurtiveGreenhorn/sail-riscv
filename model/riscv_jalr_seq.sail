@@ -10,7 +10,7 @@
 
 function clause execute (RISCV_JALR(imm, rs1, rd)) = {
 // for pipeline
-  read_Itype(rs1, rd);
+  read_Itype_regs(rs1, rd);
   read_type(INST_jalr);
 // for pipeline
 /* For the sequential model, the memory-model definition doesn't work directly

@@ -25,7 +25,7 @@ mapping clause encdec = UTYPE(imm, rd, op)
 
 function clause execute UTYPE(imm, rd, op) = {
   // for pipeline
-  read_UJtype(rd);
+  read_UJtype_regs(rd);
   match op {
     RISCV_LUI   => read_type(INST_lui),
     RISCV_AUIPC => read_type(INST_auipc)
@@ -68,7 +68,7 @@ but this is difficult
 
 function clause execute (RISCV_JAL(imm, rd)) = {
   // for pipeline
-  read_UJtype(rd);
+  read_UJtype_regs(rd);
   read_type(INST_jal);
   // for pipeline
   let t : xlenbits = PC + sign_extend(imm);
@@ -127,7 +127,7 @@ mapping clause encdec = BTYPE(imm7_6 @ imm5_0 @ imm7_5_0 @ imm5_4_1 @ 0b0, rs2, 
 
 function clause execute (BTYPE(imm, rs2, rs1, op)) = {
   // for pipeline
-  read_SBtype(rs1, rs2);
+  read_SBtype_regs(rs1, rs2);
   match op {
     RISCV_BEQ  => read_type(INST_beq),
     RISCV_BNE  => read_type(INST_bne),
@@ -201,7 +201,7 @@ mapping clause encdec = ITYPE(imm, rs1, rd, op)
 
 function clause execute (ITYPE (imm, rs1, rd, op)) = {
   // for pipeline
-  read_Itype(rs1, rd);
+  read_Itype_regs(rs1, rd);
   match op {
     RISCV_ADDI  => read_type(INST_addi),
     RISCV_SLTI  => read_type(INST_slti),
@@ -252,7 +252,7 @@ mapping clause encdec = SHIFTIOP(shamt, rs1, rd, RISCV_SRAI) <-> 0b010000 @ sham
 
 function clause execute (SHIFTIOP(shamt, rs1, rd, op)) = {
   // for pipeline
-  read_Itype(rs1, rd);
+  read_Itype_regs(rs1, rd);
   match op {
     RISCV_SLLI => read_type(INST_slli),
     RISCV_SRLI => read_type(INST_srli),
@@ -301,7 +301,7 @@ mapping clause encdec = RTYPE(rs2, rs1, rd, RISCV_SRA)  <-> 0b0100000 @ rs2 @ rs
 
 function clause execute (RTYPE(rs2, rs1, rd, op)) = {
   // for pipeline
-  read_Rtype(rs2, rs1, rd);
+  read_Rtype_regs(rs2, rs1, rd);
   match op {
     RISCV_ADD  => read_type(INST_add),
     RISCV_SLT  => read_type(INST_slt),
@@ -380,7 +380,7 @@ function check_misaligned(vaddr : virtaddr, width : word_width) -> bool =
 
 function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
   // for pipeline
-  read_Itype(rs1, rd);
+  read_Itype_regs(rs1, rd);
   match is_unsigned {
     true => {
       match width {
@@ -461,7 +461,7 @@ mapping clause encdec = STORE(imm7 @ imm5, rs2, rs1, size, false, false)        
    This may need revisiting. */
 function clause execute (STORE(imm, rs2, rs1, width, aq, rl)) = {
   // for pipeline
-  read_SBtype(rs1, rs2);
+  read_SBtype_regs(rs1, rs2);
   match width {
     BYTE   => read_type(INST_sb),
     HALF   => read_type(INST_sh),
@@ -517,7 +517,7 @@ mapping clause encdec = ADDIW(imm, rs1, rd)
 
 function clause execute (ADDIW(imm, rs1, rd)) = {
   // for pipeline
-  read_Itype(rs1, rd);
+  read_Itype_regs(rs1, rd);
   read_type(INST_addiw);
   // for pipeline
   let result : xlenbits = sign_extend(imm) + X(rs1);
@@ -556,7 +556,7 @@ mapping clause encdec = RTYPEW(rs2, rs1, rd, RISCV_SRAW)
 
 function clause execute (RTYPEW(rs2, rs1, rd, op)) = {
   // for pipeline
-  read_Rtype(rs2, rs1, rd);
+  read_Rtype_regs(rs2, rs1, rd);
   match op {
     RISCV_ADDW => read_type(INST_addw),
     RISCV_SUBW => read_type(INST_subw),
@@ -609,7 +609,7 @@ mapping clause encdec = SHIFTIWOP(shamt, rs1, rd, RISCV_SRAIW)
 
 function clause execute (SHIFTIWOP(shamt, rs1, rd, op)) = {
   // for pipeline
-  read_Itype(rs1, rd);
+  read_Itype_regs(rs1, rd);
   match op {
     RISCV_SLLIW => read_type(INST_slliw),
     RISCV_SRLIW => read_type(INST_srliw),
@@ -652,7 +652,7 @@ function effective_fence_set(set : bits(4), fiom : bool) -> bits(4) = {
 
 function clause execute (FENCE(pred, succ)) = {
   // for pipeline
-  read_Itype();
+  read_Itype_regs();
   read_type(INST_fence);
   // for pipeline
   // If the FIOM bit in menvcfg/senvcfg is set then the I/O bits can imply R/W.
@@ -715,7 +715,7 @@ mapping clause encdec = FENCE_TSO(pred, succ)
 
 function clause execute (FENCE_TSO(pred, succ)) = {
   // for pipeline
-  read_Itype();
+  read_Itype_regs();
   read_type(INST_fence);
   // for pipeline
   match (pred, succ) {
@@ -739,7 +739,7 @@ mapping clause encdec = ECALL()
 
 function clause execute ECALL() = {
   // for pipeline
-  read_Itype();
+  read_Itype_regs();
   read_type(INST_ecall);
   // for pipeline
   let t : sync_exception =

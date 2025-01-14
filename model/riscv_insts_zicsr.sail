@@ -22,7 +22,7 @@ mapping clause encdec = CSR(csr, rs1, rd, is_imm, op)
 
 function clause execute CSR(csr, rs1, rd, is_imm, op) = {
   // for pipeline
-  read_Itype(rs1, rd);
+  read_Itype_regs(rs1, rd);
   match is_imm {
     true => {
       match op {

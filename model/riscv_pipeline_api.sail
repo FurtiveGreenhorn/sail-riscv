@@ -77,13 +77,13 @@ val read_ls_addr = pure {c: "read_ls_addr"} : xlenbits -> unit
 
 val read_rs_val = pure {c: "read_rs_val"} : (xlenbits, xlenbits) -> unit
 
-val read_Rtype = pure {c: "read_Rtype"} : (bits(5), bits(5), bits(5)) -> unit
-val read_Itype_ = pure {c: "read_Itype"} : (bits(5), bits(5)) -> unit
+val read_Rtype_regs = pure {c: "read_Rtype_regs"} : (bits(5), bits(5), bits(5)) -> unit
+val read_Itype_regs_ = pure {c: "read_Itype_regs"} : (bits(5), bits(5)) -> unit
 val read_Itype_xRs1 = pure {c: "read_Itype_xRs1"} : (bits(5)) -> unit
 val read_Itype_xRs1xRd = pure {c: "read_Itype_xRs1xRd"} : unit -> unit
-overload read_Itype = {read_Itype_, read_Itype_xRs1, read_Itype_xRs1xRd}
-val read_SBtype = pure {c: "read_SBtype"} : (bits(5), bits(5)) -> unit
-val read_UJtype = pure {c: "read_UJtype"} : (bits(5)) -> unit
+overload read_Itype_regs = {read_Itype_regs_, read_Itype_xRs1, read_Itype_xRs1xRd}
+val read_SBtype_regs = pure {c: "read_SBtype_regs"} : (bits(5), bits(5)) -> unit
+val read_UJtype_regs = pure {c: "read_UJtype_regs"} : (bits(5)) -> unit
 
 val read_type = pure {c: "read_type"} : instruction_type -> unit
 val read_taken = pure {c: "read_taken"} : bool -> unit

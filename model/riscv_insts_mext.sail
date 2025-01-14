@@ -29,7 +29,7 @@ mapping clause encdec = MUL(rs2, rs1, rd, mul_op)                    if extensio
 
 function clause execute (MUL(rs2, rs1, rd, mul_op)) = {
   // for pipeline
-  read_Rtype(rs2, rs1, rd);
+  read_Rtype_regs(rs2, rs1, rd);
   match mul_op {
     struct { high = false, signed_rs1 = true,  signed_rs2 = true  } => read_type(INST_mul),
     struct { high = true,  signed_rs1 = true,  signed_rs2 = true  } => read_type(INST_mulh),
@@ -68,7 +68,7 @@ mapping clause encdec = DIV(rs2, rs1, rd, s)                           if extens
 
 function clause execute (DIV(rs2, rs1, rd, s)) = {
   // for pipeline
-  read_Rtype(rs2, rs1, rd);
+  read_Rtype_regs(rs2, rs1, rd);
   match s {
     false => read_type(INST_divu),
     true  => read_type(INST_div)
@@ -104,7 +104,7 @@ mapping clause encdec = REM(rs2, rs1, rd, s)                           if extens
 
 function clause execute (REM(rs2, rs1, rd, s)) = {
   // for pipeline
-  read_Rtype(rs2, rs1, rd);
+  read_Rtype_regs(rs2, rs1, rd);
   match s {
     false => read_type(INST_remu),
     true  => read_type(INST_rem)
@@ -136,7 +136,7 @@ mapping clause encdec = MULW(rs2, rs1, rd)
 
 function clause execute (MULW(rs2, rs1, rd)) = {
   // for pipeline
-  read_Rtype(rs2, rs1, rd);
+  read_Rtype_regs(rs2, rs1, rd);
   read_type(INST_mulw);
   // for pipeline
   let rs1_val = X(rs1)[31..0];
@@ -165,7 +165,7 @@ mapping clause encdec = DIVW(rs2, rs1, rd, s)
 
 function clause execute (DIVW(rs2, rs1, rd, s)) = {
   // for pipeline
-  read_Rtype(rs2, rs1, rd);
+  read_Rtype_regs(rs2, rs1, rd);
   match s {
     false => read_type(INST_divuw),
     true  => read_type(INST_divw)
@@ -200,7 +200,7 @@ mapping clause encdec = REMW(rs2, rs1, rd, s)
 
 function clause execute (REMW(rs2, rs1, rd, s)) = {
   // for pipeline
-  read_Rtype(rs2, rs1, rd);
+  read_Rtype_regs(rs2, rs1, rd);
   match s {
     false => read_type(INST_remuw),
     true  => read_type(INST_remw)
