@@ -22,12 +22,16 @@ public:
         : pc_reg(pc_reg), if_id_reg(ifid), id_ex_reg(idex) {}
     void receive_IdEx_rd(RegNum rd);
     void receive_IfId_rs(RegNum rs1, RegNum rs2);
-    
+    const LatencyInfo& get_latency_info() const {
+        return latency_info;
+    }
+
 private:
     RegNum IdExRegRd, IfIdRegRs1, IfIdRegRs2;
     PCReg *pc_reg;
     IfIdReg *if_id_reg;
     IdExReg *id_ex_reg;
+    LatencyInfo latency_info;
     bool logged = false;
 
     void handle_load_use_hazard();

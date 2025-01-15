@@ -79,6 +79,14 @@ void SimplePipeline::show_performance() const {
               << div_unit_latency
               << std::endl;
 
+    auto load_use_hazard_latency =
+        hazard_dectection_unit.get_latency_info()
+                              .get_total_latency();
+
+    std::cout << "Latency by Load-Use Hazard: "
+              << load_use_hazard_latency
+              << std::endl;
+
     std::cout << std::setprecision(4) << std::fixed;
 
     std::cout << "CPI: "

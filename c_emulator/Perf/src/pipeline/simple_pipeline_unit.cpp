@@ -56,6 +56,7 @@ void HazardDetectionUnit::handle_load_use_hazard() {
     if (logged) {
         std::cout << "Send flush to ID/EX !" << std::endl;
     }
+    latency_info.update(1);
 }
 
 void HazardDetectionUnit::receive_IdEx_rd(RegNum rd) {
