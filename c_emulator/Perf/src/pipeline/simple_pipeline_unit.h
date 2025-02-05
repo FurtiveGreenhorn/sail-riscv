@@ -107,10 +107,10 @@ public:
 
     void process_stage() {
         if (data->is_load()) {
-            dcache->access(data->addr);
+            dcache->access(data->ls_addr);
         }
         if (data->is_store()) {
-            dcache->access(data->addr, true);
+            dcache->access(data->ls_addr, true);
         }
     }
 private:
