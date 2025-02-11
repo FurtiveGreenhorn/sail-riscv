@@ -46,14 +46,14 @@ Execute::get_latency_info(ExecutionUnitType unit) const {
 
 // HazardDetectionUnit function implementation
 void HazardDetectionUnit::handle_load_use_hazard() {
-    if (logged)
+    if (debug_logged)
         std::cout << "detect hazard !" << std::endl;
     // send stall signal to IF/ID & PC
     // send flush signal to ID/EX
     pc_reg->receive_stall();
     if_id_reg->receive_stall();
     id_ex_reg->flush();
-    if (logged) {
+    if (debug_logged) {
         std::cout << "Send flush to ID/EX !" << std::endl;
     }
     latency_info.update(1);

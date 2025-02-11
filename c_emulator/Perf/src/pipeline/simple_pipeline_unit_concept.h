@@ -16,12 +16,12 @@ public:
     void receive(Instruction *input_data) {
         assert(input_data != nullptr);
         data = input_data;
-        if(logged) {
+        if(debug_logged) {
             std::cout << name << " received " 
                       << (data->is_bubble() ? "a bubble" : "data")
                       << " !" << std::endl;
         }
-        if(logged) {
+        if(debug_logged) {
             std::cout << name 
                 << " is processing !" << std::endl;
         }        
@@ -34,13 +34,13 @@ public:
     // data flow out to next pipeline register
     DataT *flow_out() {
         if (data == nullptr) {
-            if(logged) {
+            if(debug_logged) {
                 std::cout << "No data flowed out from "
                           << name << " !" << std::endl;
             }
             return nullptr;
         }
-        if(logged) {
+        if(debug_logged) {
             std::cout << (data->is_bubble() ? "Bubble" : "data")
                       << " flowed out from "
                       << name << " !" << std::endl;
@@ -56,7 +56,7 @@ public:
 protected:     
     DataT *data;
     std::string name;
-    bool logged = false;
+    bool debug_logged = false;
 };
 
 
@@ -87,7 +87,7 @@ public:
         static_cast<DerivedT&>(*this).after_accept();
     }
     void receive_stall() {
-        if (logged) {
+        if (debug_logged) {
             std::cout << name << " received a stall signal !" << std::endl;
         }
         stallFlag = true;
@@ -96,7 +96,7 @@ public:
     // accept(): accept data from previous stage
     void accept() {
         if (stallFlag == true) {
-            if (logged) {
+            if (debug_logged) {
                 std::cout << name << " is stalled !" << std::endl;
             }
             return;
@@ -105,7 +105,7 @@ public:
             return;
         DataT *data_in = previous_stage->flow_out();
         if (data_in == nullptr) {
-            if (logged) {
+            if (debug_logged) {
                 std::cout << name 
                         << " did not accepted data from " 
                         << previous_stage->get_name() << std::endl;
@@ -113,7 +113,7 @@ public:
             return;
         }
         data = data_in;
-        if (logged) {
+        if (debug_logged) {
             std::cout << name 
                       << " accepted "
                       << (data->is_bubble() ? "a bubble " : "data ")
@@ -129,14 +129,14 @@ public:
         if (next_stage == nullptr)
             return;
         if (data == nullptr) {
-            if(logged) {
+            if(debug_logged) {
                 std::cout << name 
                           << " has no data to transmited to " 
                           << next_stage->get_name() << " !" << std::endl;
             }
             return;
         }
-        if(logged) {
+        if(debug_logged) {
             std::cout << name << " transmited data to " 
                       << next_stage->get_name() << " !" << std::endl;
             // for debug
@@ -152,7 +152,7 @@ protected:
     DataT *data = nullptr;
     bool stallFlag = false;
     std::string name;
-    bool logged = false;
+    bool debug_logged = false;
 };
 
 } // namespace pipeline_simulator

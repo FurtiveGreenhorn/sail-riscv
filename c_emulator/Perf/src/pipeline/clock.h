@@ -17,12 +17,12 @@ public:
 
     Clock() : cycle_counter(0) {}
     void tick() { 
-        if(logged) {
+        if(debug_logged) {
             std::cout << "Clock start!" << std::endl;
         }
         for (auto *clockable : clockableObjects)
             clockable->clock_start();
-        if(logged) {
+        if(debug_logged) {
             std::cout << "Clock end!" << std::endl;
         }
         for (auto *clockable : clockableObjects)
@@ -43,7 +43,7 @@ public:
 private:
     std::vector<Clockable *> clockableObjects;
     unsigned cycle_counter;
-    bool logged = false;
+    bool debug_logged = false;
 };
 
 } // namespace pipeline_simulator

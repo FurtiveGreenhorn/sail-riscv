@@ -18,7 +18,7 @@ public:
         if (end == size) 
             end = 0;
         auto &new_inst = inst[end++].allocate();
-        if (logged) {
+        if (debug_logged) {
             std::cout << "Instruction Created !" << std::endl;
         }
         return &new_inst;
@@ -27,12 +27,12 @@ public:
         if (start == size) 
             start = 0;
         inst[start++].free();
-        if (logged) {
+        if (debug_logged) {
             std::cout << "Instruction Retired !" << std::endl;
         }
     }
     Instruction *getBubble() {
-        if (logged) {
+        if (debug_logged) {
             std::cout << "Bubble created !" << std::endl;
         }
         return &bubble;
@@ -41,7 +41,7 @@ private:
     std::array<Instruction, size> inst;
     Instruction bubble;
     std::size_t start, end;
-    bool logged = false;
+    bool debug_logged = false;
 };
 
 } // namespace performance

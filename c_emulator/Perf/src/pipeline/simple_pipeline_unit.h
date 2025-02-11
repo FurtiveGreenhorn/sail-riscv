@@ -32,7 +32,7 @@ private:
     IfIdReg *if_id_reg;
     IdExReg *id_ex_reg;
     LatencyInfo latency_info;
-    bool logged = false;
+    bool debug_logged = false;
 
     void handle_load_use_hazard();
     void check_hazard();
@@ -46,7 +46,7 @@ public:
     }
     void process_stage() {
         icache->access(data->addr);
-        if (logged)
+        if (debug_logged)
             std::cout << "fetch addr: " << data->addr << std::endl;
     }
 private:
@@ -163,7 +163,7 @@ public:
     }
 
     void after_accept() {
-        if (logged)
+        if (debug_logged)
             std::cout << name << " has been flushed !" << std::endl;
         if (flushFlag == false)
             return;

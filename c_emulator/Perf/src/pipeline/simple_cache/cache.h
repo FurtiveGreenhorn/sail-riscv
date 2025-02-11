@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <type_traits>
 #include <cstdint>
 #include <iomanip>
@@ -53,6 +54,9 @@ struct CacheParams {
         __builtin_ctz(LineSize);
     static constexpr std::size_t tag_mask = 
         -1ULL << offset_bits << __builtin_ctz(num_sets);
+    static constexpr std::size_t set_clear_mask =
+        tag_mask | ((1ULL << offset_bits) - 1);
+
         
     using replacement_policy = ReplacementPolicy<NumSets, NumWays>;
 };
@@ -81,14 +85,21 @@ public:
         void set_dirty() {
             cache_info |= dirty_mask;
         }
-        void set_tag(uint64_t tag) {
-            cache_info = tag;
+        void reset(uint64_t addr) {
+            cache_info = (addr & ~dirty_mask) | valid_mask; 
         }
-        bool cache_hit(uint64_t tag) {
-            return tag == (cache_info & Params::tag_mask);
+        uint64_t get_tag() {
+            return cache_info & Params::tag_mask;
+        }
+        static uint64_t get_tag_by_addr(uint64_t addr) {
+            return addr & Params::tag_mask;
+        }
+        bool cache_hit(uint64_t addr) {
+            return get_tag_by_addr(addr) == get_tag();
         }
         uint64_t get_addr(std::size_t set_index) {
-            return cache_info & (set_index << Params::offset_bits);
+            return (cache_info & Params::set_clear_mask) | 
+                   (set_index << Params::offset_bits);
         }
     };
     using WaysT = std::vector<CacheInfo>;
@@ -115,6 +126,7 @@ private:
     unsigned hit_cycles;
     ReplacementPolicy repl_policy;
     CacheConcept *next_level_cache;
+    bool debug_logged = true;
 
     std::size_t get_set_index(uint64_t addr) {
         static auto set_mask = Params::num_sets - 1;
@@ -122,7 +134,7 @@ private:
     }
     ;
     CacheInfo *find(std::size_t set_index, uint64_t addr) {
-        WaysT &ways = sets[set_index]; 
+        WaysT &ways = sets[set_index];
         for (int way_index = 0; way_index != Params::num_ways; ++way_index) {
             CacheInfo &cache_info = ways[way_index];
             if(cache_info.is_valid() && cache_info.cache_hit(addr)) {
@@ -156,7 +168,7 @@ access(uint64_t addr, bool is_write) {
                ++cache_log.read_access_count;
     
     auto set_index = get_set_index(addr);
-    auto tag = addr & Params::tag_mask;
+    auto tag = CacheInfo::get_tag_by_addr(addr);
 
     if(auto *cache_info = find(set_index, tag);
        cache_info != nullptr) {
@@ -172,8 +184,9 @@ access(uint64_t addr, bool is_write) {
     CacheInfo &victim = sets[set_index][victim_way];
 
     if (victim.is_valid() && victim.is_dirty()) {
-        if (next_level_cache != nullptr)
+        if (next_level_cache != nullptr) {
             next_level_cache->access(victim.get_addr(set_index), true);
+        }
         ++cache_log.writeback_count;
     }
 
@@ -183,13 +196,13 @@ access(uint64_t addr, bool is_write) {
         cycles += next_level_cache->access(addr);
     }
 
-    victim.set_tag(tag);
-    victim.set_valid();
+    victim.reset(addr);
+    repl_policy.touch(set_index, victim_way);
     if (is_write)
         victim.set_dirty();
 
     return cycles;
-}
+}   
 
 template<typename Params>
 void Cache<Params>::CacheLog::show(const std::string& name) const {
