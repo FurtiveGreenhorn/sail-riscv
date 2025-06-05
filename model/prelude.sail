@@ -154,7 +154,7 @@ val quot_round_zero = {ocaml: "quot_round_zero", interpreter: "quot_round_zero",
 val rem_round_zero = {ocaml: "rem_round_zero", interpreter: "rem_round_zero", lem: "hardware_mod", c: "tmod_int", coq: "Z.rem"} : (int, int) -> int
 
 /* The following should get us euclidean modulus, and is compatible with pre and post 0.9 versions of sail */
-overload operator % = {emod_int, mod}
+overload operator % = {emod_int, rem_round_zero}
 
 val min_int = {ocaml: "min_int", interpreter: "min_int", lem: "min", coq: "min_atom", c: "min_int"} : forall 'x 'y.
   (int('x), int('y)) -> {'z, ('x <= 'y & 'z == 'x) | ('x > 'y & 'z == 'y). int('z)}
@@ -179,8 +179,13 @@ val print_platform = {ocaml: "Platform.print_platform", interpreter: "print_endl
 val get_config_print_instr = {ocaml: "Platform.get_config_print_instr", c:"get_config_print_instr"} : unit -> bool
 val get_config_print_reg = {ocaml: "Platform.get_config_print_reg", c:"get_config_print_reg"} : unit -> bool
 val get_config_print_mem = {ocaml: "Platform.get_config_print_mem", c:"get_config_print_mem"} : unit -> bool
-
 val get_config_print_platform = {ocaml: "Platform.get_config_print_platform", c:"get_config_print_platform"} : unit -> bool
+
+/* for pipeline */
+val get_config_print_pipeline = {c:"get_config_print_pipeline"} : unit -> bool
+val get_config_pipeline = {c:"get_config_pipeline"} : unit -> bool
+/* for pipeline */
+
 // defaults for other backends
 function get_config_print_instr () = false
 function get_config_print_reg () = false

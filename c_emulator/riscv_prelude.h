@@ -14,3 +14,8 @@ bool get_config_print_instr(unit u);
 bool get_config_print_reg(unit u);
 bool get_config_print_mem(unit u);
 bool get_config_print_platform(unit u);
+
+/* for pipeline */
+bool get_config_print_pipeline(unit u);
+bool get_config_pipeline(unit u);
+/* for pipeline */

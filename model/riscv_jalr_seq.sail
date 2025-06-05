@@ -78,22 +78,43 @@ function clause execute (RISCV_JALR(imm, rs1, rd)) = {
  * performance.
  */
   let t : xlenbits = X(rs1) + EXTS(imm);
-  /* Extensions get the first checks on the prospective target address. */
-  match ext_control_check_addr(t) {
-    Ext_ControlAddr_Error(e) => {
-      ext_handle_control_check_error(e);
-      RETIRE_FAIL
-    },
-    Ext_ControlAddr_OK(addr) => {
-      let target = [addr with 0 = bitzero];  /* clear addr[0] */
-      if bit_to_bool(target[1]) & not(haveRVC()) then {
-        handle_mem_exception(target, E_Fetch_Addr_Align());
+  //for pipeline
+  if get_config_pipeline() 
+  then {
+      let t2 : xlenbits = dReg.op1 + EXTS(imm);
+      let t3 : xlenbits = [t2 with 0 = bitzero];
+      let nextPc : xlenbits = dReg.pc + 4;
+      //print("t2 = " ^ BitStr(t2));
+
+      PC = t3; //最低位清為0
+      //print("t3 = " ^ BitStr(t3));
+
+      fRegNew.bubble = true;
+      dRegNew.bubble = true;
+      history.controlHazardCount = history.controlHazardCount + 1;
+      //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+      setAeReg_temp(t3, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), nextPc, false, false, false, BYTE, true);
+      RETIRE_SUCCESS
+  } else {
+    /* Extensions get the first checks on the prospective target address. */
+    match ext_control_check_addr(t) {
+      Ext_ControlAddr_Error(e) => {
+        ext_handle_control_check_error(e);
         RETIRE_FAIL
-      } else {
-        X(rd) = get_next_pc();
-        set_next_pc(target);
-        RETIRE_SUCCESS
+      },
+      Ext_ControlAddr_OK(addr) => {
+        let target = [addr with 0 = bitzero];  /* clear addr[0] */
+        if bit_to_bool(target[1]) & not(haveRVC()) then {
+          handle_mem_exception(target, E_Fetch_Addr_Align());
+          RETIRE_FAIL
+        } else {
+          X(rd) = get_next_pc();
+          set_next_pc(target);
+          RETIRE_SUCCESS
+        }
       }
     }
   }
+  //for pipeline
+
 }

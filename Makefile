@@ -70,18 +70,18 @@ endif
 # Non-instruction sources
 PRELUDE = prelude.sail prelude_mapping.sail $(SAIL_XLEN) $(SAIL_FLEN) prelude_mem_metadata.sail prelude_mem.sail
 
-SAIL_REGS_SRCS = riscv_reg_type.sail riscv_freg_type.sail riscv_regs.sail riscv_pc_access.sail riscv_sys_regs.sail
+SAIL_REGS_SRCS = riscv_history_type.sail riscv_history.sail riscv_reg_type.sail riscv_freg_type.sail riscv_regs.sail riscv_pc_access.sail riscv_sys_regs.sail
 SAIL_REGS_SRCS += riscv_pmp_regs.sail riscv_pmp_control.sail
 SAIL_REGS_SRCS += riscv_ext_regs.sail $(SAIL_CHECK_SRCS)
 
 SAIL_ARCH_SRCS = $(PRELUDE)
 SAIL_ARCH_SRCS += riscv_types_common.sail riscv_types_ext.sail riscv_types.sail
-SAIL_ARCH_SRCS += riscv_vmem_types.sail $(SAIL_REGS_SRCS) $(SAIL_SYS_SRCS) riscv_platform.sail
-SAIL_ARCH_SRCS += riscv_mem.sail $(SAIL_VM_SRCS)
-SAIL_ARCH_RVFI_SRCS = $(PRELUDE) rvfi_dii.sail riscv_types_common.sail riscv_types_ext.sail riscv_types.sail riscv_vmem_types.sail $(SAIL_REGS_SRCS) $(SAIL_SYS_SRCS) riscv_platform.sail riscv_mem.sail $(SAIL_VM_SRCS) riscv_types_kext.sail
+SAIL_ARCH_SRCS += riscv_vmem_types.sail riscv_cache_types.sail $(SAIL_REGS_SRCS) $(SAIL_SYS_SRCS) riscv_cache_base.sail riscv_branch_predictor.sail
+SAIL_ARCH_SRCS +=  riscv_platform.sail riscv_mem.sail riscv_cache.sail $(SAIL_VM_SRCS)
+SAIL_ARCH_RVFI_SRCS = $(PRELUDE)  rvfi_dii.sail riscv_types_common.sail riscv_types_ext.sail riscv_types.sail riscv_vmem_types.sail $(SAIL_REGS_SRCS) $(SAIL_SYS_SRCS)  riscv_platform.sail  riscv_mem.sail   $(SAIL_VM_SRCS) riscv_types_kext.sail
 SAIL_ARCH_SRCS += riscv_types_kext.sail    # Shared/common code for the cryptography extension.
 
-SAIL_STEP_SRCS = riscv_step_common.sail riscv_step_ext.sail riscv_decode_ext.sail riscv_fetch.sail riscv_step.sail
+SAIL_STEP_SRCS = riscv_step_common.sail riscv_writeBack.sail riscv_memoryAccess.sail riscv_step_ext.sail riscv_decode_ext.sail riscv_fetch.sail riscv_step.sail
 RVFI_STEP_SRCS = riscv_step_common.sail riscv_step_rvfi.sail riscv_decode_ext.sail riscv_fetch_rvfi.sail riscv_step.sail
 
 # Control inclusion of 64-bit only riscv_analysis
@@ -183,7 +183,8 @@ endif
 
 .PHONY:
 
-all: ocaml_emulator/riscv_ocaml_sim_$(ARCH) c_emulator/riscv_sim_$(ARCH) riscv_isa riscv_coq riscv_hol riscv_rmem
+#all: ocaml_emulator/riscv_ocaml_sim_$(ARCH) c_emulator/riscv_sim_$(ARCH) riscv_isa riscv_coq riscv_hol riscv_rmem
+all: c_emulator/riscv_sim_$(ARCH) 
 .PHONY: all
 
 # the following ensures empty sail-generated .c files don't hang around and

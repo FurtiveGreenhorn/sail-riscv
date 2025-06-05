@@ -253,28 +253,38 @@ function writeCSR (csr : csreg, value : xlenbits) -> unit = {
 }
 
 function clause execute CSR(csr, rs1, rd, is_imm, op) = {
-  let rs1_val : xlenbits = if is_imm then EXTZ(rs1) else X(rs1);
-  let isWrite : bool = match op {
-    CSRRW  => true,
-    _      => if is_imm then unsigned(rs1_val) != 0 else unsigned(rs1) != 0
-  };
-  if not(check_CSR(csr, cur_privilege, isWrite))
-  then { handle_illegal(); RETIRE_FAIL }
-  else if not(ext_check_CSR(csr, cur_privilege, isWrite))
-  then { ext_check_CSR_fail(); RETIRE_FAIL }
-  else {
-    let csr_val = readCSR(csr); /* could have side-effects, so technically shouldn't perform for CSRW[I] with rd == 0 */
-    if isWrite then {
-      let new_val : xlenbits = match op {
-        CSRRW => rs1_val,
-        CSRRS => csr_val | rs1_val,
-        CSRRC => csr_val & ~(rs1_val)
-      };
-      writeCSR(csr, new_val)
+  /* for pipeline */
+  if get_config_pipeline() 
+  then {
+      //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+      setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(0b01010), EXTZ(0b0), false, false, false, BYTE, false);
+      RETIRE_SUCCESS
+  }else {
+  
+    let rs1_val : xlenbits = if is_imm then EXTZ(rs1) else X(rs1);
+    let isWrite : bool = match op {
+      CSRRW  => true,
+      _      => if is_imm then unsigned(rs1_val) != 0 else unsigned(rs1) != 0
     };
-    X(rd) = csr_val;
-    RETIRE_SUCCESS
+    if not(check_CSR(csr, cur_privilege, isWrite))
+    then { handle_illegal(); RETIRE_FAIL }
+    else if not(ext_check_CSR(csr, cur_privilege, isWrite))
+    then { ext_check_CSR_fail(); RETIRE_FAIL }
+    else {
+      let csr_val = readCSR(csr); /* could have side-effects, so technically shouldn't perform for CSRW[I] with rd == 0 */
+      if isWrite then {
+        let new_val : xlenbits = match op {
+          CSRRW => rs1_val,
+          CSRRS => csr_val | rs1_val,
+          CSRRC => csr_val & ~(rs1_val)
+        };
+        writeCSR(csr, new_val)
+      };
+      X(rd) = csr_val;
+      RETIRE_SUCCESS
+    }
   }
+  /* for pipeline */
 }
 
 mapping maybe_i : bool <-> string = {

@@ -87,16 +87,43 @@ function fetch() -> FetchResult =
       else match translateAddr(use_pc, Execute()) {
         TR_Failure(e, _)     => F_Error(e, PC),
         TR_Address(ppclo, _) => {
+
+          /* cache */
+          l1i_cache_access(ppclo);
+          /* cache */
+
           /* split instruction fetch into 16-bit granules to handle RVC, as
            * well as to generate precise fault addresses in any fetch
            * exceptions.
            */
           match mem_read(Execute(), ppclo, 2, false, false, false) {
-            MemException(e) => F_Error(e, PC),
+            MemException(e) =>  {
+              /* for pipeline */              
+              if get_config_pipeline() 
+              then {
+                fRegNew.bubble = false;
+                fRegNew.stall = 0;
+                fRegNew.inst  = EXTZ(0b0); //如果為0, decode變成bubble  
+                fRegNew.len = 4;
+                fRegNew.pc = PC; //之後做預測用
+                PC = PC + fRegNew.len;
+                if get_config_print_pipeline()
+                then {
+                  print("Fetched instruction " ^ BitStr(fRegNew.inst));
+                };
+                F_Base(EXTZ(0b0))
+              } else{
+                F_Error(e, PC)
+              }
+              /* for pipeline */  
+            },
             MemValue(ilo)   => {
-              if   isRVC(ilo)
-              then F_RVC(ilo)
-              else {
+              /*
+              if   isRVC(ilo) // inst low (16bits)
+              then {
+                F_RVC(ilo)
+              }
+              else {*/
                 /* fetch PC check for the next instruction granule */
                 PC_hi : xlenbits = PC + 2;
                 match ext_fetch_check_pc(PC, PC_hi) {
@@ -107,13 +134,30 @@ function fetch() -> FetchResult =
                       TR_Address(ppchi, _) => {
                         match mem_read(Execute(), ppchi, 2, false, false, false) {
                           MemException(e) => F_Error(e, PC_hi),
-                          MemValue(ihi)   => F_Base(append(ihi, ilo))
+                          MemValue(ihi)   => {
+                          /* for pipeline */              
+                            if get_config_pipeline() 
+                            then {
+                              fRegNew.bubble = false;
+                              fRegNew.stall = 0;
+                              fRegNew.inst  = append(ihi, ilo); //如果為0, decode變成bubble  
+                              fRegNew.len = 4;
+                              fRegNew.pc = PC; //之後做預測用
+                              PC = PC + fRegNew.len;
+                              if get_config_print_pipeline()
+                              then {
+                                print("Fetched instruction " ^ BitStr(fRegNew.inst));
+                              };
+                            };
+                          /* for pipeline */            
+                            F_Base(append(ihi, ilo))
+                          }
                         }
                       }
                     }
                   }
                 }
-              }
+             // }
             }
           }
         }

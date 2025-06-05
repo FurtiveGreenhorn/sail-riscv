@@ -73,8 +73,73 @@
   hooks, the default implementation of which is provided below.
  */
 
+
 val ext_decode_compressed : bits(16) -> ast effect {rreg}
 function ext_decode_compressed(bv) = encdec_compressed(bv)
 
 val ext_decode : bits(32) -> ast effect {rreg}
-function ext_decode(bv) = encdec(bv)
+function ext_decode(bv) = {
+    /* for pipeline */            
+    if get_config_pipeline() 
+    then {
+        if fReg.stall > 0 
+        then {
+            if   get_config_print_pipeline()
+            then print("Decode: Stall");
+            PC = PC - 4;
+            //dRegNew.bubble = true; ?
+            return NONE()
+        };
+        if fReg.bubble | (fReg.inst == EXTZ(0b0))
+        then{
+            if   get_config_print_pipeline()
+            then print("Decode: Bubble");
+            dRegNew.bubble = true;
+            return NONE()
+        };
+
+        let insn : ast = encdec(fReg.inst);
+        predictedBranch : bool = false;
+        offset : bits(13) = EXTZ(0b0);
+        isBranch : bool = false;
+        
+        match insn {
+            BTYPE(imm, rs2, rs1, op)  => {
+                offset = imm;
+                isBranch = true;
+            },
+            _ => {
+                ();
+            }
+        }; 
+
+        if isBranch 
+        then{
+            predictedBranch = predict(fReg.pc, EXTS(offset));
+            if predictedBranch 
+            then {
+                dRegNew.predictedPC = fReg.pc + EXTS(offset); ///跳轉 
+                dRegNew.anotherPC = fReg.pc + 4; //不跳轉
+                fRegNew.bubble = true;
+            } else {
+                dRegNew.anotherPC = fReg.pc + EXTS(offset); 
+            }
+        };
+
+        setDregNew(insn); //設置dRegNew.rs1(rs2) 為了forward而設置的
+        dRegNew.stall = 0;
+        dRegNew.bubble = false;
+        dRegNew.pc = fReg.pc;  
+        dRegNew.predictedBranch = predictedBranch; 
+
+        if get_config_print_pipeline()
+        then {
+            print("Decoded instruction " ^ BitStr(fReg.inst) ^ " as " ^ to_str(insn));
+        };
+
+        insn
+    } else {
+        encdec(bv)
+    };
+    /* for pipeline */            
+}

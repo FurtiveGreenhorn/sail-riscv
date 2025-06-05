@@ -78,7 +78,7 @@ register instbits : xlenbits
 
 /* register file and accessors */
 
-register x1  : regtype
+register x1  : regtype 
 register x2  : regtype
 register x3  : regtype
 register x4  : regtype
@@ -109,6 +109,43 @@ register x28 : regtype
 register x29 : regtype
 register x30 : regtype
 register x31 : regtype
+
+/* for pipeline register */
+register fReg    : FReg
+register fRegNew : FReg
+register dReg    : DReg
+register dRegNew : DReg
+register eReg    : EReg
+register eRegNew : EReg
+register mReg    : MReg
+register mRegNew : MReg
+
+register alu : bool
+register multiplier  : bool
+register divider  : bool
+register mul_cycle  : int = 5 //cycle為n+1
+register div_cycle  : int = 5 //cycle為n+1
+register mul_cycle_count  : int = mul_cycle //cycle為n+1
+register div_cycle_count  : int = div_cycle //cycle為n+1
+
+
+register fu_forward : Fu = EMPTY //為了data forwarding需紀錄, 進入exe前紀錄使用哪個fu,並且需要forwarding,才會記錄
+register exe_issue :  Fu = EMPTY //為了data forwarding需紀錄
+
+register fu_order : vector(3, dec, Fu) = [EMPTY, EMPTY, EMPTY]
+register aeReg_temp    : EReg
+register meReg_temp    : EReg
+register deReg_temp    : EReg
+
+register executeWriteBack : bool = false
+register executeWBReg : regtype = EXTS(0b0)
+register memoryWriteBack : bool = false
+register memoryWBReg : regtype = EXTS(0b0)
+register memoryStallWriteBack : bool = false
+register memoryStallWBReg : regtype = EXTS(0b0)
+
+/* for pipeline register */
+
 
 val rX : forall 'n, 0 <= 'n < 32. regno('n) -> xlenbits effect {rreg, escape}
 function rX r = {
@@ -342,3 +379,221 @@ function init_base_regs () = {
   x30 = zero_reg;
   x31 = zero_reg
 }
+
+
+
+
+val init_pipeline_regs : unit -> unit 
+function init_pipeline_regs () = {
+  fReg.bubble = false;
+  fReg.stall = 0;
+  fReg.pc = EXTZ(0b0);
+  fReg.inst = EXTZ(0b0);
+  fReg.len = 0;
+
+  fRegNew.bubble = false;
+  fRegNew.stall = 0;
+  fRegNew.pc = EXTZ(0b0);
+  fRegNew.inst = EXTZ(0b0);
+  fRegNew.len = 0;
+//-----------------------------------
+  dReg.bubble = false;
+  dReg.stall = 0;
+  dReg.pc = EXTZ(0b0);
+  dReg.inst = EXTZ(0b0);
+  dReg.rs1 = EXTZ(0b0);
+  dReg.rs2 = EXTZ(0b0);
+  dReg.rd = EXTZ(0b0);
+
+  dReg.op1 = EXTZ(0b0);
+  dReg.op2 = EXTZ(0b0);
+  dReg.predictedBranch = false;
+  dReg.predictedPC = EXTZ(0b0);
+  dReg.anotherPC = EXTZ(0b0);
+
+  dRegNew.bubble = false;
+  dRegNew.stall = 0;
+  dRegNew.pc = EXTZ(0b0);
+  dRegNew.inst = EXTZ(0b0);
+  dRegNew.rs1 = EXTZ(0b0);
+  dRegNew.rs2 = EXTZ(0b0);
+  dRegNew.rd = EXTZ(0b0);
+
+  dRegNew.op1 = EXTZ(0b0);
+  dRegNew.op2 = EXTZ(0b0);
+  dRegNew.predictedBranch = false;
+  dRegNew.predictedPC = EXTZ(0b0);
+  dRegNew.anotherPC = EXTZ(0b0);
+//-----------------------------------
+  eReg.bubble = false;
+  eReg.stall = 0;
+  eReg.pc = EXTZ(0b0);
+  eReg.inst = EXTZ(0b0);
+  eReg.op1 = EXTZ(0b0);
+  eReg.op2 = EXTZ(0b0);
+  eReg.writeReg = false;
+  eReg.destReg = EXTZ(0b0);
+  eReg.out = EXTZ(0b0);
+  eReg.writeMem = false;
+  eReg.readMem = false;
+  eReg.readSignExt = false;
+  eReg.memLen = BYTE;
+  eReg.branch = false;
+
+  eRegNew.bubble = false;
+  eRegNew.stall = 0;
+  eRegNew.pc = EXTZ(0b0);
+  eRegNew.inst = EXTZ(0b0);
+  eRegNew.op1 = EXTZ(0b0);
+  eRegNew.op2 = EXTZ(0b0);
+  eRegNew.writeReg = false;
+  eRegNew.destReg = EXTZ(0b0);
+  eRegNew.out = EXTZ(0b0);
+  eRegNew.writeMem = false;
+  eRegNew.readMem = false;
+  eRegNew.readSignExt = false;
+  eRegNew.memLen = BYTE;
+  eRegNew.branch = false;
+//-----------------------------------
+  aeReg_temp.bubble = false;
+  aeReg_temp.stall = 0;
+  aeReg_temp.pc = EXTZ(0b0);
+  aeReg_temp.inst = EXTZ(0b0);
+  aeReg_temp.op1 = EXTZ(0b0);
+  aeReg_temp.op2 = EXTZ(0b0);
+  aeReg_temp.writeReg = false;
+  aeReg_temp.destReg = EXTZ(0b0);
+  aeReg_temp.out = EXTZ(0b0);
+  aeReg_temp.writeMem = false;
+  aeReg_temp.readMem = false;
+  aeReg_temp.readSignExt = false;
+  aeReg_temp.memLen = BYTE;
+  aeReg_temp.branch = false;
+//-----------------------------------
+  meReg_temp.bubble = false;
+  meReg_temp.stall = 0;
+  meReg_temp.pc = EXTZ(0b0);
+  meReg_temp.inst = EXTZ(0b0);
+  meReg_temp.op1 = EXTZ(0b0);
+  meReg_temp.op2 = EXTZ(0b0);
+  meReg_temp.writeReg = false;
+  meReg_temp.destReg = EXTZ(0b0);
+  meReg_temp.out = EXTZ(0b0);
+  meReg_temp.writeMem = false;
+  meReg_temp.readMem = false;
+  meReg_temp.readSignExt = false;
+  meReg_temp.memLen = BYTE;
+  meReg_temp.branch = false;
+//-----------------------------------
+  deReg_temp.bubble = false;
+  deReg_temp.stall = 0;
+  deReg_temp.pc = EXTZ(0b0);
+  deReg_temp.inst = EXTZ(0b0);
+  deReg_temp.op1 = EXTZ(0b0);
+  deReg_temp.op2 = EXTZ(0b0);
+  deReg_temp.writeReg = false;
+  deReg_temp.destReg = EXTZ(0b0);
+  deReg_temp.out = EXTZ(0b0);
+  deReg_temp.writeMem = false;
+  deReg_temp.readMem = false;
+  deReg_temp.readSignExt = false;
+  deReg_temp.memLen = BYTE;
+  deReg_temp.branch = false;
+//-----------------------------------
+
+  mReg.bubble = false;
+  mReg.stall = 0;
+  mReg.pc = EXTZ(0b0);
+  mReg.inst = EXTZ(0b0);
+  mReg.op1 = EXTZ(0b0);
+  mReg.op2 = EXTZ(0b0);
+  mReg.out = EXTZ(0b0);
+  mReg.writeReg = false;
+  mReg.readMem = false;
+  mReg.destReg = EXTZ(0b0);
+
+  mRegNew.bubble = false;
+  mRegNew.stall = 0;
+  mRegNew.pc = EXTZ(0b0);
+  mRegNew.inst = EXTZ(0b0);
+  mRegNew.op1 = EXTZ(0b0);
+  mRegNew.op2 = EXTZ(0b0);
+  mRegNew.out = EXTZ(0b0);
+  mRegNew.writeReg = false;
+  mRegNew.readMem = false;
+  mRegNew.destReg = EXTZ(0b0);
+}
+
+
+val init_pipeline_regNews : unit -> unit 
+function init_pipeline_regNews () = {
+  fRegNew.bubble = false;
+  fRegNew.stall = 0;
+  fRegNew.pc = EXTZ(0b0);
+  fRegNew.inst = EXTZ(0b0);
+  fRegNew.len = 0;
+//-----------------------------------
+  dRegNew.bubble = false;
+  dRegNew.stall = 0;
+  dRegNew.pc = EXTZ(0b0);
+  dRegNew.inst = EXTZ(0b0);
+  dRegNew.rs1 = EXTZ(0b0);
+  dRegNew.rs2 = EXTZ(0b0);
+  dRegNew.op1 = EXTZ(0b0);
+  dRegNew.op2 = EXTZ(0b0);
+  dRegNew.predictedBranch = false;
+  dRegNew.predictedPC = EXTZ(0b0);
+  dRegNew.anotherPC = EXTZ(0b0);
+//-----------------------------------
+  eRegNew.bubble = false;
+  eRegNew.stall = 0;
+  eRegNew.pc = EXTZ(0b0);
+  eRegNew.inst = EXTZ(0b0);
+  eRegNew.op1 = EXTZ(0b0);
+  eRegNew.op2 = EXTZ(0b0);
+  eRegNew.writeReg = false;
+  eRegNew.destReg = EXTZ(0b0);
+  eRegNew.out = EXTZ(0b0);
+  eRegNew.writeMem = false;
+  eRegNew.readMem = false;
+  eRegNew.readSignExt = false;
+  eRegNew.memLen = BYTE;
+  eRegNew.branch = false;
+//-----------------------------------
+  mRegNew.bubble = false;
+  mRegNew.stall = 0;
+  mRegNew.pc = EXTZ(0b0);
+  mRegNew.inst = EXTZ(0b0);
+  mRegNew.op1 = EXTZ(0b0);
+  mRegNew.op2 = EXTZ(0b0);
+  mRegNew.out = EXTZ(0b0);
+  mRegNew.writeReg = false;
+  mRegNew.readMem = false;
+  mRegNew.destReg = EXTZ(0b0);
+}
+
+val init_pipeline_fu : unit -> unit 
+function init_pipeline_fu () = {
+  alu = false;
+  multiplier = false;
+  divider = false;
+}
+
+val print_cpuState : unit -> unit 
+
+function print_cpuState() = {
+  print("==================== CPU STATE ====================");
+
+  print("PC:" ^ BitStr(PC));
+  print("zero: " ^ BitStr(rX_bits(0b00000)) ^ " ra: " ^ BitStr(rX_bits(0b00001)) ^ " sp:  " ^ BitStr(rX_bits(0b00010)) ^ " gp:  " ^ BitStr(rX_bits(0b00011)));
+  print("tp:   " ^ BitStr(rX_bits(0b00100)) ^ " t0: " ^ BitStr(rX_bits(0b00101)) ^ " t1:  " ^ BitStr(rX_bits(0b00110)) ^ " t2:  " ^ BitStr(rX_bits(0b00111)));
+  print("s0:   " ^ BitStr(rX_bits(0b01000)) ^ " s1: " ^ BitStr(rX_bits(0b01001)) ^ " a0:  " ^ BitStr(rX_bits(0b01010)) ^ " a1:  " ^ BitStr(rX_bits(0b01011)));
+  print("a2:   " ^ BitStr(rX_bits(0b01100)) ^ " a3: " ^ BitStr(rX_bits(0b01101)) ^ " a4:  " ^ BitStr(rX_bits(0b01110)) ^ " a5:  " ^ BitStr(rX_bits(0b01111)));
+  print("a6:   " ^ BitStr(rX_bits(0b10000)) ^ " a7: " ^ BitStr(rX_bits(0b10001)) ^ " s2:  " ^ BitStr(rX_bits(0b10010)) ^ " s3:  " ^ BitStr(rX_bits(0b10011)));
+  print("s4:   " ^ BitStr(rX_bits(0b10100)) ^ " s5: " ^ BitStr(rX_bits(0b10101)) ^ " s6:  " ^ BitStr(rX_bits(0b10110)) ^ " s7:  " ^ BitStr(rX_bits(0b10111)));
+  print("s8:   " ^ BitStr(rX_bits(0b11000)) ^ " s9: " ^ BitStr(rX_bits(0b11001)) ^ " s10: " ^ BitStr(rX_bits(0b11010)) ^ " s11: " ^ BitStr(rX_bits(0b11011)));
+  print("t3:   " ^ BitStr(rX_bits(0b11100)) ^ " t4: " ^ BitStr(rX_bits(0b11101)) ^ " t5:  " ^ BitStr(rX_bits(0b11110)) ^ " t6:  " ^ BitStr(rX_bits(0b11111)));
+  print("===================================================");
+  print("");
+}
+

@@ -70,11 +70,26 @@
 
 /* The emulator fetch-execute-interrupt dispatch loop. */
 
+
 /* returns whether to increment the step count in the trace */
 function step(step_no : int) -> bool = {
+  /*for pipeline ntust*/            
+  if get_config_pipeline() 
+  then {
+    if fu_forward == EMPTY
+    then{
+      executeWriteBack = false; 
+      executeWBReg = EXTS(0b1);
+    };
+    memoryWriteBack = false; 
+    memoryWBReg = EXTS(0b1);
+    memoryStallWriteBack = false;
+    memoryStallWBReg = EXTS(0b0);
+  };
+  /*for pipeline ntust*/            
+
   /* for step extensions */
   ext_pre_step_hook();
-
   /*
    * This records whether or not minstret should be incremented when
    * the instruction is retired. Since retirement occurs before CSR
@@ -96,6 +111,8 @@ function step(step_no : int) -> bool = {
       None() => {
         /* the extension hook interposes on the fetch result */
         let f : FetchResult = ext_fetch_hook(fetch());
+        //print("fetback_PC = " ^ BitStr(PC));
+
         match f {
           /* extension error */
           F_Ext_Error(e)   => {
@@ -117,7 +134,12 @@ function step(step_no : int) -> bool = {
             };
             /* check for RVC once here instead of every RVC execute clause. */
             if haveRVC() then {
-              nextPC = PC + 2;
+              if get_config_pipeline() 
+              then {
+                () ;
+              } else {
+                nextPC = PC + 2;
+              };
               (execute(ast), true)
              } else {
               handle_illegal();
@@ -126,19 +148,115 @@ function step(step_no : int) -> bool = {
           },
           F_Base(w) => {
             instbits = EXTZ(w);
-            let ast = ext_decode(w);
-            if   get_config_print_instr()
+            //print("decfront_PC = " ^ BitStr(PC));
+
+            let ast : ast = ext_decode(w);
+            //print("decback_PC = " ^ BitStr(PC));
+
+            /* for pipeline */            
+            if get_config_pipeline() 
             then {
-              print_instr("[" ^ string_of_int(step_no) ^ "] [" ^ to_str(cur_privilege) ^ "]: " ^ BitStr(PC) ^ " (" ^ BitStr(w) ^ ") " ^ to_str(ast));
+              dastNew = ast;
+              //print("dastNew: " ^ to_str(dastNew));
+              // /print("dast: " ^ to_str(dast));
+              execute_check_fu();    //檢查alu,mul和div是否正在運作, 有的話減cycle
+              //print("test: " ^ to_str(dastNew));
+              if execute_check(dast) //檢查是否為stall or bubble
+              then {(RETIRE_SUCCESS,true)} 
+              else {
+                history.instCount = history.instCount + 1;
+                if get_config_print_pipeline()
+                then {
+                 // print_int("history.instCount = " , history.instCount);
+                  print("Execute: " ^ to_str(dast));
+                };
+                //print("exefront_PC = " ^ BitStr(PC));
+                (execute(dast), true)
+              }
+            } else {
+                if   get_config_print_instr()
+                then {
+                  print_instr("[" ^ string_of_int(step_no) ^ "] [" ^ to_str(cur_privilege) ^ "]: " ^ BitStr(PC) ^ " (" ^ BitStr(w) ^ ") " ^ to_str(ast));
+                };
+                nextPC = PC + 4;
+                (execute(ast), true)
             };
-            nextPC = PC + 4;
-            (execute(ast), true)
+            /* for pipeline */
           }
         }
       }
     };
+  
+  /* for pipeline */            
+  if get_config_pipeline() 
+  then {
+    execute_issue();
+    execute_forward_data(dast);
 
-  tick_pc();
+    //print("memfront_PC = " ^ BitStr(PC));
+
+    memoryAccess();
+    //print("memback_PC = " ^ BitStr(PC));
+
+    writeBack();
+    //print("writeBack_PC = " ^ BitStr(PC));
+
+  //==========================================================================
+    if fReg.stall > 0
+    then {
+      fReg.stall = fReg.stall - 1;
+    } else {
+      fReg = fRegNew;
+    };
+    //print_int("dReg.stall = " , dReg.stall);
+
+    if dReg.stall > 0
+    then {
+    
+      dReg.stall = dReg.stall - 1;
+      //mast = east; //為了印出結果 , 改到execute_issue
+      //east = NONE(()); //為了印出結果, 改到execute_issue
+    } else {
+      //mast = east; //為了印出結果 
+      //east = dast; //為了印出結果, 改到execute_issue
+      dast = dastNew;
+      dReg = dRegNew;
+    };
+    
+
+
+    mast = east; //為了印出結果
+
+    if exe_issue == MULTIPLIER
+    then {east = mdast;} //為了印出結果
+    else if exe_issue == DIVIDER
+    then {east = ddast;} //為了印出結果
+    else if exe_issue == ALU
+    then {east = adast;} //為了印出結果
+    else east = NONE(());
+
+    eReg = eRegNew;
+
+
+    mReg = mRegNew;
+    init_pipeline_regNews(); 
+    // The Branch perdiction happens here to avoid strange bugs in branch prediction
+    if dReg.bubble == false & /*dReg.stall == 0 & fReg.stall == 0 &*/ dReg.predictedBranch
+    then {
+      //print("back");
+      PC = dReg.predictedPC;
+    };
+    history.cycleCount = history.cycleCount + 1;
+    if get_config_print_pipeline()
+    then {
+      print_cpuState();
+    };
+    //print_int("Number of Instructions: ", history.instCount);
+
+  } else {
+    tick_pc();
+  };
+  /* for pipeline */            
 
   /* update minstret */
   match retired {
@@ -184,7 +302,22 @@ function init_model () -> unit = {
   init_sys ();      /* processor */
   init_vmem ();     /* virtual memory */
 
+  /* for pipeline */            
+  if get_config_pipeline() 
+  then {
+    init_predbuf();
+    init_history();
+    init_pipeline_regs(); /* pipeline reg ntust*/
+    init_pipeline_fu(); /*function unit*/
+    fReg.bubble = true;
+    dReg.bubble = true;
+    eReg.bubble = true;
+    mReg.bubble = true;
+  };
+  /* for pipeline */
+
   /* initialize extensions last */
   ext_init ();
   ext_init_regs ();
 }
+

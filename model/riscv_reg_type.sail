@@ -85,3 +85,64 @@ function regval_from_reg(r) = r
 
 val regval_into_reg : xlenbits -> regtype
 function regval_into_reg(v) = v
+
+/* for pipeline register */
+enum Fu = ALU | MULTIPLIER | DIVIDER | EMPTY
+
+struct FReg = {
+    bubble : bool,
+    stall  : int,
+    pc     : xlenbits,
+    inst   : bits(32),
+    len    : int,
+}
+
+struct DReg = {
+    bubble : bool,
+    stall  : int,
+    rs1    : regtype,  //為了data forward
+    rs2    : regtype,  //為了data forward
+    rd     : regtype,  //為了mext, data forward
+    pc     : xlenbits,
+    inst   : bits(32),
+    op1    : xlenbits, //為了data forward
+    op2    : xlenbits, //為了data forward
+    //dest   : regtype,
+    //offset : xlenbits,
+    predictedBranch : bool,
+    predictedPC : xlenbits,
+    anotherPC : xlenbits,
+}
+
+
+// enum word_width = {BYTE, HALF, WORD, DOUBLE}
+struct EReg = {
+    bubble : bool,
+    stall  : int,
+    pc     : xlenbits,
+    inst   : bits(32),
+    op1    : xlenbits,
+    op2    : xlenbits,
+    writeReg : bool,
+    destReg  : regtype,
+    out      : xlenbits,
+    writeMem : bool,
+    readMem  : bool,
+    readSignExt : bool,
+    memLen : word_width,
+    branch : bool,
+}
+
+struct MReg = {
+    bubble : bool,
+    stall  : int,
+    pc     : xlenbits,
+    inst   : bits(32),
+    op1    : xlenbits,
+    op2    : xlenbits,
+    out      : xlenbits,
+    writeReg : bool,
+    readMem  : bool,
+    destReg : regtype,
+}
+/* for pipeline register */

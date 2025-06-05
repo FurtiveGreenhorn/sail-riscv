@@ -50,3 +50,17 @@ bool get_config_print_platform(unit u)
 {
   return (config_print_platform) ? true : false;
 }
+
+/* for pipeline */
+bool get_config_print_pipeline(unit u) 
+{
+  return (config_print_pipeline) ? true : false;
+}
+
+bool get_config_pipeline(unit u) 
+{
+  return (config_pipeline) ? true : false;
+}
+/* for pipeline */
+
+

@@ -73,6 +73,107 @@
 
 
 /* ****************************************************************** */
+
+/* for pipeline */      
+val setEregNew : (xlenbits, xlenbits, xlenbits, bool, xlenbits, xlenbits, bool, bool, bool, word_width, bool) -> unit
+function setEregNew(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch) = {
+  eRegNew.stall = 0;
+  eRegNew.bubble = false;
+  eRegNew.pc = pc;
+  eRegNew.inst = dReg.inst; // no parameter
+  eRegNew.op1 = op1;
+  eRegNew.op2 = op2;
+  eRegNew.writeReg = writeReg;
+  eRegNew.destReg = destReg;
+  eRegNew.out = out;
+  eRegNew.writeMem = writeMem;
+  eRegNew.readMem = readMem;
+  eRegNew.readSignExt = readSignExt;
+  eRegNew.memLen = memLen;
+  eRegNew.branch = branch;
+}
+
+
+val setAeReg_temp : (xlenbits, xlenbits, xlenbits, bool, xlenbits, xlenbits, bool, bool, bool, word_width, bool) -> unit
+function setAeReg_temp(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch) = {
+  aeReg_temp.stall = 0;
+  aeReg_temp.bubble = false;
+  aeReg_temp.pc = pc; 
+  aeReg_temp.inst = dReg.inst; // no parameter 
+  aeReg_temp.op1 = op1;
+  aeReg_temp.op2 = op2;
+  aeReg_temp.writeReg = writeReg; 
+  aeReg_temp.destReg = destReg;
+  aeReg_temp.out = out;
+  aeReg_temp.writeMem = writeMem; 
+  aeReg_temp.readMem = readMem;
+  aeReg_temp.readSignExt = readSignExt;
+  aeReg_temp.memLen = memLen;
+  aeReg_temp.branch = branch;
+}
+
+val setMeReg_temp : (xlenbits, xlenbits, xlenbits, bool, xlenbits, xlenbits, bool, bool, bool, word_width, bool) -> unit
+function setMeReg_temp(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch) = {
+  meReg_temp.stall = 0;
+  meReg_temp.bubble = false;
+  meReg_temp.pc = pc; 
+  meReg_temp.inst = dReg.inst; // no parameter 
+  meReg_temp.op1 = op1;
+  meReg_temp.op2 = op2;
+  meReg_temp.writeReg = writeReg; 
+  meReg_temp.destReg = destReg;
+  meReg_temp.out = out;
+  meReg_temp.writeMem = writeMem; 
+  meReg_temp.readMem = readMem;
+  meReg_temp.readSignExt = readSignExt;
+  meReg_temp.memLen = memLen;
+  meReg_temp.branch = branch;
+}
+
+val setDeReg_temp : (xlenbits, xlenbits, xlenbits, bool, xlenbits, xlenbits, bool, bool, bool, word_width, bool) -> unit
+function setDeReg_temp(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch) = {
+  deReg_temp.stall = 0;
+  deReg_temp.bubble = false;
+  deReg_temp.pc = pc; 
+  deReg_temp.inst = dReg.inst; // no parameter 
+  deReg_temp.op1 = op1;
+  deReg_temp.op2 = op2;
+  deReg_temp.writeReg = writeReg; 
+  deReg_temp.destReg = destReg;
+  deReg_temp.out = out;
+  deReg_temp.writeMem = writeMem; 
+  deReg_temp.readMem = readMem;
+  deReg_temp.readSignExt = readSignExt;
+  deReg_temp.memLen = memLen;
+  deReg_temp.branch = branch;
+}
+
+
+
+union clause ast = NONE : (unit)
+
+function clause execute NONE(_) = {
+   setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), false, EXTZ(0b0), EXTZ(0b0), false, false, false, BYTE, false);
+   RETIRE_SUCCESS
+}
+
+mapping clause assembly = NONE()
+  <-> "None" 
+
+
+
+register dast :  ast = NONE(())
+register dastNew :  ast = NONE(())
+
+register adast :  ast = NONE(())
+register mdast :  ast = NONE(())
+register ddast :  ast = NONE(())
+
+
+register east :  ast = NONE(()) //為了印出結果
+register mast :  ast = NONE(()) //為了印出結果
+/* for pipeline */
+
 union clause ast = UTYPE : (bits(20), regidx, uop)
 
 mapping encdec_uop : uop <-> bits(7) = {
@@ -84,12 +185,29 @@ mapping clause encdec = UTYPE(imm, rd, op)
   <-> imm @ rd @ encdec_uop(op)
 
 function clause execute UTYPE(imm, rd, op) = {
+  /* for pipeline */    
+  pc_ : xlenbits = EXTZ(0b0);
+  if get_config_pipeline()           
+  then {
+    pc_ = dReg.pc;
+  } else {
+    pc_ = get_arch_pc();
+  };
+
   let off : xlenbits = EXTS(imm @ 0x000);
   let ret : xlenbits = match op {
-    RISCV_LUI   => off,
-    RISCV_AUIPC => get_arch_pc() + off
+      RISCV_LUI   => off, // Load Upper Immediate
+      RISCV_AUIPC => pc_ + off // Add Upper Immediate to PC
   };
-  X(rd) = ret;
+
+  if get_config_pipeline() 
+  then {
+  //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+      setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), ret, false, false, false, BYTE, false);
+  } else {
+    X(rd) = ret;
+  };
+  /* for pipeline */            
   RETIRE_SUCCESS
 }
 
@@ -122,24 +240,42 @@ but this is difficult
 function clause execute (RISCV_JAL(imm, rd)) = {
   let t : xlenbits = PC + EXTS(imm);
   /* Extensions get the first checks on the prospective target address. */
-  match ext_control_check_pc(t) {
-    Ext_ControlAddr_Error(e) => {
-      ext_handle_control_check_error(e);
-      RETIRE_FAIL
-    },
-    Ext_ControlAddr_OK(target) => {
-      /* Perform standard alignment check */
-      if bit_to_bool(target[1]) & not(haveRVC())
-      then {
-        handle_mem_exception(target, E_Fetch_Addr_Align());
+  
+  /* for pipeline */            
+  if get_config_pipeline() 
+  then {
+      let t2 : xlenbits = dReg.pc + EXTS(imm);
+      let nextPc : xlenbits = dReg.pc + 4;
+
+      PC = t2;
+      fRegNew.bubble = true;
+      dRegNew.bubble = true;
+      history.controlHazardCount = history.controlHazardCount + 1;
+      //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+      setAeReg_temp(t2, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), nextPc, false, false, false, BYTE, true);
+      RETIRE_SUCCESS
+  } else {
+    match ext_control_check_pc(t) {
+      Ext_ControlAddr_Error(e) => {
+        ext_handle_control_check_error(e);
         RETIRE_FAIL
-      } else {
-        X(rd) = get_next_pc();
-        set_next_pc(target);
-        RETIRE_SUCCESS
+      },
+      Ext_ControlAddr_OK(target) => {
+        /* Perform standard alignment check */
+        if bit_to_bool(target[1]) & not(haveRVC())
+        then {
+          handle_mem_exception(target, E_Fetch_Addr_Align());
+          RETIRE_FAIL
+        } else {
+          X(rd) = get_next_pc();
+          set_next_pc(target);
+          RETIRE_SUCCESS
+        }
       }
     }
   }
+  /* for pipeline */            
+
 }
 
 /* TODO: handle 2-byte-alignment in mappings */
@@ -174,35 +310,68 @@ mapping clause encdec = BTYPE(imm7_6 @ imm5_0 @ imm7_5_0 @ imm5_4_1 @ 0b0, rs2, 
   <-> imm7_6 : bits(1) @ imm7_5_0 : bits(6) @ rs2 @ rs1 @ encdec_bop(op) @ imm5_4_1 : bits(4) @ imm5_0 : bits(1) @ 0b1100011
 
 function clause execute (BTYPE(imm, rs2, rs1, op)) = {
-  let rs1_val = X(rs1);
-  let rs2_val = X(rs2);
+  rs1_val = X(rs1);
+  rs2_val = X(rs2);
+  /* for pipeline */            
+  if get_config_pipeline() 
+  then {
+    rs1_val = dReg.op1;
+    rs2_val = dReg.op2;
+  };
+  
   let taken : bool = match op {
     RISCV_BEQ  => rs1_val == rs2_val,
-    RISCV_BNE  => rs1_val != rs2_val,
+    RISCV_BNE  => rs1_val != rs2_val, //Branch if Not Equal
     RISCV_BLT  => rs1_val <_s rs2_val,
     RISCV_BGE  => rs1_val >=_s rs2_val,
     RISCV_BLTU => rs1_val <_u rs2_val,
     RISCV_BGEU => rs1_val >=_u rs2_val
   };
   let t : xlenbits = PC + EXTS(imm);
-  if taken then {
-    /* Extensions get the first checks on the prospective target address. */
-    match ext_control_check_pc(t) {
-      Ext_ControlAddr_Error(e) => {
-        ext_handle_control_check_error(e);
-        RETIRE_FAIL
-      },
-      Ext_ControlAddr_OK(target) => {
-        if bit_to_bool(target[1]) & not(haveRVC()) then {
-          handle_mem_exception(target, E_Fetch_Addr_Align());
-          RETIRE_FAIL;
-        } else {
-          set_next_pc(target);
-          RETIRE_SUCCESS
+
+  if get_config_pipeline() 
+    then {
+      let t2 : xlenbits = dReg.pc + EXTS(imm);
+      //if taken then print("taken = true") else print("taken = false");
+      if dReg.predictedBranch == taken 
+      then {
+        //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+        history.predictedBranch = history.predictedBranch + 1;
+        setAeReg_temp(t2, EXTZ(0b0), EXTZ(0b0), false, EXTZ(0b0), EXTZ(0b0), false, false, false, BYTE, true); //bubble
+
+      } else {
+        //print("front");
+        PC = dReg.anotherPC;
+        fRegNew.bubble = true;
+        dRegNew.bubble  = true;
+        history.unpredictedBranch = history.unpredictedBranch + 1;
+        history.controlHazardCount = history.controlHazardCount + 1; 
+        setAeReg_temp(t2, EXTZ(0b0), EXTZ(0b0), false, EXTZ(0b0), EXTZ(0b0), false, false, false, BYTE, true); //bubble
+      };
+      update(dReg.pc, taken); //更新該地址是否要跳轉, BPB策略會用到
+      RETIRE_SUCCESS
+    } else {
+      if taken then {
+        /* Extensions get the first checks on the prospective target address. */
+        match ext_control_check_pc(t) {
+          Ext_ControlAddr_Error(e) => {
+            ext_handle_control_check_error(e);
+            RETIRE_FAIL
+          },
+          Ext_ControlAddr_OK(target) => {
+            if bit_to_bool(target[1]) & not(haveRVC()) then {
+              handle_mem_exception(target, E_Fetch_Addr_Align());
+              RETIRE_FAIL;
+            } else {
+              set_next_pc(target);
+              RETIRE_SUCCESS
+            }
+          }
         }
-      }
+      } else RETIRE_SUCCESS
     }
-  } else RETIRE_SUCCESS
+    /*for pipeline ntust*/            
+
 }
 
 mapping btype_mnemonic : bop <-> string = {
@@ -233,18 +402,34 @@ mapping clause encdec = ITYPE(imm, rs1, rd, op)
   <-> imm @ rs1 @ encdec_iop(op) @ rd @ 0b0010011
 
 function clause execute (ITYPE (imm, rs1, rd, op)) = {
-  let rs1_val = X(rs1);
-  let immext : xlenbits = EXTS(imm);
-  let result : xlenbits = match op {
-    RISCV_ADDI  => rs1_val + immext,
-    RISCV_SLTI  => EXTZ(bool_to_bits(rs1_val <_s immext)),
-    RISCV_SLTIU => EXTZ(bool_to_bits(rs1_val <_u immext)),
-    RISCV_ANDI  => rs1_val & immext,
-    RISCV_ORI   => rs1_val | immext,
-    RISCV_XORI  => rs1_val ^ immext
-  };
-  X(rd) = result;
-  RETIRE_SUCCESS
+    rs1_val = X(rs1);
+    /* for pipeline  */            
+    if get_config_pipeline() 
+    then {
+        rs1_val = dReg.op1;
+    };
+
+    let immext : xlenbits = EXTS(imm);
+
+    let result : xlenbits = match op {
+        RISCV_ADDI  => rs1_val + immext,
+        RISCV_SLTI  => EXTZ(bool_to_bits(rs1_val <_s immext)), //set less than imm
+        RISCV_SLTIU => EXTZ(bool_to_bits(rs1_val <_u immext)),
+        RISCV_ANDI  => rs1_val & immext,
+        RISCV_ORI   => rs1_val | immext,
+        RISCV_XORI  => rs1_val ^ immext
+      };
+
+    if get_config_pipeline() 
+    then {
+      //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+      setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), result, false, false, false, BYTE, false);
+    } else {
+      X(rd) = result;      
+    };
+    /* for pipeline */            
+
+    RETIRE_SUCCESS
 }
 
 mapping itype_mnemonic : iop <-> string = {
@@ -273,10 +458,15 @@ mapping clause encdec = SHIFTIOP(shamt, rs1, rd, RISCV_SRLI) <-> 0b000000 @ sham
 mapping clause encdec = SHIFTIOP(shamt, rs1, rd, RISCV_SRAI) <-> 0b010000 @ shamt @ rs1 @ 0b101 @ rd @ 0b0010011 if sizeof(xlen) == 64 | shamt[5] == bitzero
 
 function clause execute (SHIFTIOP(shamt, rs1, rd, op)) = {
-  let rs1_val = X(rs1);
+  rs1_val = X(rs1);
+  /* for pipeline */            
+  if get_config_pipeline() 
+  then {
+      rs1_val = dReg.op1;
+  };
   /* the decoder guard should ensure that shamt[5] = 0 for RV32 */
   let result : xlenbits = match op {
-    RISCV_SLLI => if   sizeof(xlen) == 32
+    RISCV_SLLI => if   sizeof(xlen) == 32 // Set Less Than Immediate
                   then rs1_val << shamt[4..0]
                   else rs1_val << shamt,
     RISCV_SRLI => if   sizeof(xlen) == 32
@@ -286,7 +476,15 @@ function clause execute (SHIFTIOP(shamt, rs1, rd, op)) = {
                   then shift_right_arith32(rs1_val, shamt[4..0])
                   else shift_right_arith64(rs1_val, shamt)
   };
-  X(rd) = result;
+
+  if get_config_pipeline() 
+  then {
+    //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+    setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), result, false, false, false, BYTE, false);
+  } else {
+    X(rd) = result;      
+  };
+  /* for pipeline */       
   RETIRE_SUCCESS
 }
 
@@ -314,8 +512,16 @@ mapping clause encdec = RTYPE(rs2, rs1, rd, RISCV_SUB)  <-> 0b0100000 @ rs2 @ rs
 mapping clause encdec = RTYPE(rs2, rs1, rd, RISCV_SRA)  <-> 0b0100000 @ rs2 @ rs1 @ 0b101 @ rd @ 0b0110011
 
 function clause execute (RTYPE(rs2, rs1, rd, op)) = {
-  let rs1_val = X(rs1);
-  let rs2_val = X(rs2);
+  rs1_val = X(rs1);
+  rs2_val = X(rs2);
+
+  /* for pipeline */            
+  if get_config_pipeline() 
+  then {
+      rs1_val = dReg.op1;
+      rs2_val = dReg.op2;
+  };
+  
   let result : xlenbits = match op {
     RISCV_ADD  => rs1_val + rs2_val,
     RISCV_SLT  => EXTZ(bool_to_bits(rs1_val <_s rs2_val)),
@@ -334,7 +540,16 @@ function clause execute (RTYPE(rs2, rs1, rd, op)) = {
                   then shift_right_arith32(rs1_val, rs2_val[4..0])
                   else shift_right_arith64(rs1_val, rs2_val[5..0])
   };
-  X(rd) = result;
+
+  if get_config_pipeline() 
+  then {
+    //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+    setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), result, false, false, false, BYTE, false);
+  } else {
+    X(rd) = result;
+  };
+  /* for pipeline */            
+
   RETIRE_SUCCESS
 }
 
@@ -386,29 +601,69 @@ function check_misaligned(vaddr : xlenbits, width : word_width) -> bool =
 
 function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
   let offset : xlenbits = EXTS(imm);
-  /* Get the address, X(rs1) + offset.
-     Some extensions perform additional checks on address validity. */
-  match ext_data_get_addr(rs1, offset, Read(Data), width) {
-    Ext_DataAddr_Error(e)  => { ext_handle_data_check_error(e); RETIRE_FAIL },
-    Ext_DataAddr_OK(vaddr) =>
-      if   check_misaligned(vaddr, width)
-      then { handle_mem_exception(vaddr, E_Load_Addr_Align()); RETIRE_FAIL }
-      else match translateAddr(vaddr, Read(Data)) {
-        TR_Failure(e, _) => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
-        TR_Address(paddr, _) =>
-          match (width) {
-            BYTE =>
-              process_load(rd, vaddr, mem_read(Read(Data), paddr, 1, aq, rl, false), is_unsigned),
-            HALF =>
-              process_load(rd, vaddr, mem_read(Read(Data), paddr, 2, aq, rl, false), is_unsigned),
-            WORD =>
-              process_load(rd, vaddr, mem_read(Read(Data), paddr, 4, aq, rl, false), is_unsigned),
-            DOUBLE if sizeof(xlen) >= 64 =>
-              process_load(rd, vaddr, mem_read(Read(Data), paddr, 8, aq, rl, false), is_unsigned),
-            _ => report_invalid_width(__FILE__, __LINE__, width, "load")
+  /*for pipeline ntust*/            
+  if get_config_pipeline() 
+  then {
+    let rs1_val = dReg.op1;
+    match (width) {
+      BYTE => //LB(U)
+        //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+        setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), rs1_val + offset, false, true, is_unsigned, BYTE, false),
+      HALF => //LH(U)
+        setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), rs1_val + offset, false, true, is_unsigned, HALF, false),
+      WORD => // LW(U)
+        setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), rs1_val + offset, false, true, is_unsigned, WORD, false),
+      DOUBLE if sizeof(xlen) >= 64 => // LD(U)
+        setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), rs1_val + offset, false, true, is_unsigned, DOUBLE, false),
+      _ => report_invalid_width(__FILE__, __LINE__, width, "load") 
+    };
+
+
+    //print("dRegNew.rs1 = " ^ BitStr(dRegNew.rs1));
+    //print("rd = " ^ BitStr(rd));
+  /*
+    if dRegNew.rs1 == EXTZ(rd) | dRegNew.rs2 == EXTZ(rd)
+    then { 
+      //print("Yes");
+      fRegNew.stall = 1;
+      dRegNew.stall = 1;
+      //eRegNew.bubble = true; ? 
+      history.cycleCount = history.cycleCount - 1;
+      history.memoryHazardCount = history.memoryHazardCount + 1;
+    };
+*/
+    RETIRE_SUCCESS
+  } else {
+    /* Get the address, X(rs1) + offset.
+      Some extensions perform additional checks on address validity. */
+    match ext_data_get_addr(rs1, offset, Read(Data), width) {
+      Ext_DataAddr_Error(e)  => { ext_handle_data_check_error(e); RETIRE_FAIL },
+      Ext_DataAddr_OK(vaddr) =>
+        if   check_misaligned(vaddr, width)
+        then { handle_mem_exception(vaddr, E_Load_Addr_Align()); RETIRE_FAIL }
+        else match translateAddr(vaddr, Read(Data)) {
+          TR_Failure(e, _) => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
+          TR_Address(paddr, _) => {
+            /*cache*/
+            l1d_cache_access(paddr, false);
+            /*cache*/
+
+            match (width) {
+              BYTE =>
+                process_load(rd, vaddr, mem_read(Read(Data), paddr, 1, aq, rl, false), is_unsigned),
+              HALF =>
+                process_load(rd, vaddr, mem_read(Read(Data), paddr, 2, aq, rl, false), is_unsigned),
+              WORD =>
+                process_load(rd, vaddr, mem_read(Read(Data), paddr, 4, aq, rl, false), is_unsigned),
+              DOUBLE if sizeof(xlen) >= 64 =>
+                process_load(rd, vaddr, mem_read(Read(Data), paddr, 8, aq, rl, false), is_unsigned),
+              _ => report_invalid_width(__FILE__, __LINE__, width, "load")
+            }
           }
-      }
+        }
+    }
   }
+  /*for pipeline ntust*/            
 }
 
 val maybe_aq : bool <-> string
@@ -444,41 +699,68 @@ function clause execute (STORE(imm, rs2, rs1, width, aq, rl)) = {
   let offset : xlenbits = EXTS(imm);
   /* Get the address, X(rs1) + offset.
      Some extensions perform additional checks on address validity. */
-  match ext_data_get_addr(rs1, offset, Write(Data), width) {
-    Ext_DataAddr_Error(e)  => { ext_handle_data_check_error(e); RETIRE_FAIL },
-    Ext_DataAddr_OK(vaddr) =>
-      if   check_misaligned(vaddr, width)
-      then { handle_mem_exception(vaddr, E_SAMO_Addr_Align()); RETIRE_FAIL }
-      else match translateAddr(vaddr, Write(Data)) {
-        TR_Failure(e, _)    => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
-        TR_Address(paddr, _) => {
-          let eares : MemoryOpResult(unit) = match width {
-            BYTE   => mem_write_ea(paddr, 1, aq, rl, false),
-            HALF   => mem_write_ea(paddr, 2, aq, rl, false),
-            WORD   => mem_write_ea(paddr, 4, aq, rl, false),
-            DOUBLE => mem_write_ea(paddr, 8, aq, rl, false)
-          };
-          match (eares) {
-            MemException(e) => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
-            MemValue(_) => {
-              let rs2_val = X(rs2);
-              let res : MemoryOpResult(bool) = match (width) {
-                BYTE => mem_write_value(paddr, 1, rs2_val[7..0],  aq, rl, false),
-                HALF => mem_write_value(paddr, 2, rs2_val[15..0], aq, rl, false),
-                WORD => mem_write_value(paddr, 4, rs2_val[31..0], aq, rl, false),
-                DOUBLE if sizeof(xlen) >= 64
-                     => mem_write_value(paddr, 8, rs2_val,        aq, rl, false),
-                _    => report_invalid_width(__FILE__, __LINE__, width, "store"),
-              };
-              match (res) {
-                MemValue(true)  => RETIRE_SUCCESS,
-                MemValue(false) => internal_error(__FILE__, __LINE__, "store got false from mem_write_value"),
-                MemException(e) => { handle_mem_exception(vaddr, e); RETIRE_FAIL }
+  
+  if get_config_pipeline() 
+  then {
+    let rs1_val = dReg.op1;
+    let rs2_val = dReg.op2;
+
+    match (width) {
+      BYTE => //LB
+        //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+        setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(rs2_val[7..0]), true, EXTZ(0b0), rs1_val + offset, true, false, false, BYTE, false),
+      HALF => //LH
+        setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(rs2_val[15..0]), true, EXTZ(0b0), rs1_val + offset, true, false, false, HALF, false),
+      WORD => // LW
+        setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(rs2_val[31..0]), true, EXTZ(0b0), rs1_val + offset, true, false, false, WORD, false),
+      DOUBLE if sizeof(xlen) >= 64 => // LD
+        setAeReg_temp(dReg.pc, EXTZ(0b0), rs2_val, true, EXTZ(0b0), rs1_val + offset, true, false, false, DOUBLE, false),
+      _    => report_invalid_width(__FILE__, __LINE__, width, "store"),
+    };
+    RETIRE_SUCCESS
+  } else {
+ 
+    match ext_data_get_addr(rs1, offset, Write(Data), width) {
+      Ext_DataAddr_Error(e)  => { ext_handle_data_check_error(e); RETIRE_FAIL },
+      Ext_DataAddr_OK(vaddr) =>
+        if   check_misaligned(vaddr, width)
+        then { handle_mem_exception(vaddr, E_SAMO_Addr_Align()); RETIRE_FAIL }
+        else match translateAddr(vaddr, Write(Data)) {
+          TR_Failure(e, _)    => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
+          TR_Address(paddr, _) => {
+            
+            /*cache*/
+            l1d_cache_access(paddr, true);
+            /*cache*/
+
+            let eares : MemoryOpResult(unit) = match width {
+              BYTE   => mem_write_ea(paddr, 1, aq, rl, false),
+              HALF   => mem_write_ea(paddr, 2, aq, rl, false),
+              WORD   => mem_write_ea(paddr, 4, aq, rl, false),
+              DOUBLE => mem_write_ea(paddr, 8, aq, rl, false)
+            };
+            match (eares) {
+              MemException(e) => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
+              MemValue(_) => {
+                let rs2_val = X(rs2);
+                let res : MemoryOpResult(bool) = match (width) {
+                  BYTE => mem_write_value(paddr, 1, rs2_val[7..0],  aq, rl, false),
+                  HALF => mem_write_value(paddr, 2, rs2_val[15..0], aq, rl, false),
+                  WORD => mem_write_value(paddr, 4, rs2_val[31..0], aq, rl, false),
+                  DOUBLE if sizeof(xlen) >= 64
+                      => mem_write_value(paddr, 8, rs2_val,        aq, rl, false),
+                  _    => report_invalid_width(__FILE__, __LINE__, width, "store"),
+                };
+                match (res) {
+                  MemValue(true)  => RETIRE_SUCCESS,
+                  MemValue(false) => internal_error(__FILE__, __LINE__, "store got false from mem_write_value"),
+                  MemException(e) => { handle_mem_exception(vaddr, e); RETIRE_FAIL }
+                }
               }
             }
           }
         }
-      }
+    }
   }
 }
 
@@ -495,7 +777,17 @@ mapping clause encdec = ADDIW(imm, rs1, rd)
 
 function clause execute (ADDIW(imm, rs1, rd)) = {
   let result : xlenbits = EXTS(imm) + X(rs1);
-  X(rd) = EXTS(result[31..0]);
+  /*for pipeline ntust*/            
+  if get_config_pipeline() 
+  then {
+    let result2 : xlenbits = EXTS(imm) + dReg.op1;
+    //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+    setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), result2, false, false, false, BYTE, false);
+  } else {
+    X(rd) = EXTS(result[31..0]);
+  };
+  /*for pipeline ntust*/            
+
   RETIRE_SUCCESS
 }
 
@@ -507,7 +799,7 @@ mapping clause assembly = ADDIW(imm, rs1, rd)
 /* ****************************************************************** */
 union clause ast = SHIFTW : (bits(5), regidx, regidx, sop)
 
-mapping clause encdec = SHIFTW(shamt, rs1, rd, RISCV_SLLI)
+mapping clause encdec = SHIFTW(shamt, rs1, rd, RISCV_SLLI) //error? 
       if sizeof(xlen) == 64
   <-> 0b0000000 @ shamt @ rs1 @ 0b001 @ rd @ 0b0011011
       if sizeof(xlen) == 64
@@ -521,13 +813,28 @@ mapping clause encdec = SHIFTW(shamt, rs1, rd, RISCV_SRAI)
       if sizeof(xlen) == 64
 
 function clause execute (SHIFTW(shamt, rs1, rd, op)) = {
-  let rs1_val = (X(rs1))[31..0];
+  rs1_val = (X(rs1))[31..0];
+
+  /* for pipeline */            
+  if get_config_pipeline() 
+  then {
+      rs1_val = dReg.op1[31..0];
+  };
+
   let result : bits(32) = match op {
     RISCV_SLLI => rs1_val << shamt,
     RISCV_SRLI => rs1_val >> shamt,
     RISCV_SRAI => shift_right_arith32(rs1_val, shamt)
   };
-  X(rd) = EXTS(result);
+
+  if get_config_pipeline() 
+  then {
+    //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+    setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), EXTS(result), false, false, false, BYTE, false);
+  } else {
+    X(rd) = EXTS(result);
+  };
+  /* for pipeline */  
   RETIRE_SUCCESS
 }
 
@@ -567,8 +874,16 @@ mapping clause encdec = RTYPEW(rs2, rs1, rd, RISCV_SRAW)
       if sizeof(xlen) == 64
 
 function clause execute (RTYPEW(rs2, rs1, rd, op)) = {
-  let rs1_val = (X(rs1))[31..0];
-  let rs2_val = (X(rs2))[31..0];
+  rs1_val = (X(rs1))[31..0];
+  rs2_val = (X(rs2))[31..0];
+
+  /* for pipeline */            
+  if get_config_pipeline() 
+  then {
+      rs1_val = dReg.op1[31..0];
+      rs2_val = dReg.op2[31..0];
+  };
+
   let result : bits(32) = match op {
     RISCV_ADDW => rs1_val + rs2_val,
     RISCV_SUBW => rs1_val - rs2_val,
@@ -576,7 +891,15 @@ function clause execute (RTYPEW(rs2, rs1, rd, op)) = {
     RISCV_SRLW => rs1_val >> (rs2_val[4..0]),
     RISCV_SRAW => shift_right_arith32(rs1_val, rs2_val[4..0])
   };
-  X(rd) = EXTS(result);
+  if get_config_pipeline() 
+  then {
+    //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+    setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), EXTS(result), false, false, false, BYTE, false);
+  } else {
+    X(rd) = EXTS(result);
+  };
+  /* for pipeline */            
+
   RETIRE_SUCCESS
 }
 
@@ -610,13 +933,28 @@ mapping clause encdec = SHIFTIWOP(shamt, rs1, rd, RISCV_SRAIW)
       if sizeof(xlen) == 64
 
 function clause execute (SHIFTIWOP(shamt, rs1, rd, op)) = {
-  let rs1_val = X(rs1);
+  rs1_val = X(rs1);
+
+  /* for pipeline */            
+  if get_config_pipeline() 
+  then {
+      rs1_val = dReg.op1;
+  };
+
   let result : bits(32) = match op {
     RISCV_SLLIW => rs1_val[31..0] << shamt,
     RISCV_SRLIW => rs1_val[31..0] >> shamt,
     RISCV_SRAIW => shift_right_arith32(rs1_val[31..0], shamt)
   };
-  X(rd) = EXTS(result);
+  /*for pipeline ntust*/            
+  if get_config_pipeline() 
+  then {
+    //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+    setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), true, EXTZ(rd), EXTS(result), false, false, false, BYTE, false);
+  } else {
+    X(rd) = EXTS(result);
+  };
+  /*for pipeline ntust*/  
   RETIRE_SUCCESS
 }
 
@@ -664,22 +1002,28 @@ function clause execute (FENCE(pred, succ)) = {
 $else
 
 function clause execute (FENCE(pred, succ)) = {
-  match (pred, succ) {
-    (_ : bits(2) @ 0b11, _ : bits(2) @ 0b11) => __barrier(Barrier_RISCV_rw_rw),
-    (_ : bits(2) @ 0b10, _ : bits(2) @ 0b11) => __barrier(Barrier_RISCV_r_rw),
-    (_ : bits(2) @ 0b10, _ : bits(2) @ 0b10) => __barrier(Barrier_RISCV_r_r),
-    (_ : bits(2) @ 0b11, _ : bits(2) @ 0b01) => __barrier(Barrier_RISCV_rw_w),
-    (_ : bits(2) @ 0b01, _ : bits(2) @ 0b01) => __barrier(Barrier_RISCV_w_w),
-    (_ : bits(2) @ 0b01, _ : bits(2) @ 0b11) => __barrier(Barrier_RISCV_w_rw),
-    (_ : bits(2) @ 0b11, _ : bits(2) @ 0b10) => __barrier(Barrier_RISCV_rw_r),
-    (_ : bits(2) @ 0b10, _ : bits(2) @ 0b01) => __barrier(Barrier_RISCV_r_w),
-    (_ : bits(2) @ 0b01, _ : bits(2) @ 0b10) => __barrier(Barrier_RISCV_w_r),
+  if get_config_pipeline() 
+  then {
+      //(pc, op1, op2, writeReg, destReg, out, writeMem , readMem, readSignExt, memLen, branch)
+      setAeReg_temp(dReg.pc, EXTZ(0b0), EXTZ(0b0), false, EXTZ(0b0), EXTZ(0b0), false, false, false, BYTE, false);
+  }else {
+    match (pred, succ) {
+      (_ : bits(2) @ 0b11, _ : bits(2) @ 0b11) => __barrier(Barrier_RISCV_rw_rw),
+      (_ : bits(2) @ 0b10, _ : bits(2) @ 0b11) => __barrier(Barrier_RISCV_r_rw),
+      (_ : bits(2) @ 0b10, _ : bits(2) @ 0b10) => __barrier(Barrier_RISCV_r_r),
+      (_ : bits(2) @ 0b11, _ : bits(2) @ 0b01) => __barrier(Barrier_RISCV_rw_w),
+      (_ : bits(2) @ 0b01, _ : bits(2) @ 0b01) => __barrier(Barrier_RISCV_w_w),
+      (_ : bits(2) @ 0b01, _ : bits(2) @ 0b11) => __barrier(Barrier_RISCV_w_rw),
+      (_ : bits(2) @ 0b11, _ : bits(2) @ 0b10) => __barrier(Barrier_RISCV_rw_r),
+      (_ : bits(2) @ 0b10, _ : bits(2) @ 0b01) => __barrier(Barrier_RISCV_r_w),
+      (_ : bits(2) @ 0b01, _ : bits(2) @ 0b10) => __barrier(Barrier_RISCV_w_r),
 
-    (_ : bits(4)       , _ : bits(2) @ 0b00) => (),
-    (_ : bits(2) @ 0b00, _ : bits(4)       ) => (),
+      (_ : bits(4)       , _ : bits(2) @ 0b00) => (),
+      (_ : bits(2) @ 0b00, _ : bits(4)       ) => (),
 
-    _ => { print("FIXME: unsupported fence");
-           () }
+      _ => { print("FIXME: unsupported fence");
+            () }
+    };
   };
   RETIRE_SUCCESS
 }
@@ -877,4 +1221,11 @@ function clause execute SFENCE_VMA(rs1, rs2) = {
 
 mapping clause assembly = SFENCE_VMA(rs1, rs2)
   <-> "sfence.vma" ^ spc() ^ reg_name(rs1) ^ sep() ^ reg_name(rs2)
+
+
+
+
+
+
+
 

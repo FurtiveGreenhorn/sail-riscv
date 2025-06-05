@@ -37,16 +37,21 @@ extern bool zrvfi_mem_data_present;
 void zrvfi_get_mem_data(sail_bits *rop, unit);
 mach_bits zrvfi_get_v2_trace_sizze(unit);
 void zrvfi_get_v2_support_packet(sail_bits *rop, unit);
-
 // Debugging prints
 unit zprint_rvfi_exec(unit);
 unit zprint_instr_packet(uint64_t);
 #endif
 
+
+
 extern mach_bits zxlen_val;
 extern bool zhtif_done;
 extern mach_bits zhtif_exit_code;
 extern bool have_exception;
+
+/* for syscall */
+extern sail_int zhtif_argc; 
+/* for syscall */
 
 /* machine state */
 
@@ -65,6 +70,19 @@ extern mach_bits zmepc, zmtval;
 extern mach_bits zsepc, zstval;
 
 extern mach_bits zfloat_result, zfloat_fflags;
+
+/*for pipeline test
+struct zFReg  {
+    bool zbubble;
+    uint64_t zinst;
+    sail_int zlen;
+    uint64_t zpc;
+    bool zstall;
+};
+
+extern struct zFReg zfReg;
+for pipeline test */
+
 
 struct zMcause {mach_bits zMcause_chunk_0;};
 extern struct zMcause zmcause, zscause;
