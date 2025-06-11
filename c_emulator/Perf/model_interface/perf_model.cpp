@@ -1,5 +1,6 @@
-#include "simple_pipeline.h"
-#include "simple_pipeline_api.h"
+#include "perf_model.h"
+#include "../src/pipeline/pipeline.h"
+#include "../src/Instruction/instruction.h"
 #include "sail.h"
 
 using namespace pipeline_simulator;

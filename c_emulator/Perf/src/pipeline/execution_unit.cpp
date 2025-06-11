@@ -1,4 +1,4 @@
-#include "simple_execution_unit.h"
+#include "execution_unit.h"
 #include "clock.h"
 
 namespace pipeline_simulator {

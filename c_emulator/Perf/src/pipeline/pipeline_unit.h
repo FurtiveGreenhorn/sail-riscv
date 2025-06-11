@@ -3,9 +3,9 @@
 #include "../Instruction/instruction_pool.h"
 #include "../Instruction/instruction.h"
 #include "latency_log.h"
-#include "simple_execution_unit.h"
-#include "simple_pipeline_unit_concept.h"
-#include "simple_cache/cache.h"
+#include "execution_unit.h"
+#include "pipeline_unit_concept.h"
+#include "cache/cache.h"  // 路徑已更新，無需修改
 #include "stall_policy.h"
 #include <memory>
 

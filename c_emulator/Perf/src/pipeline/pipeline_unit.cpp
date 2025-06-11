@@ -1,4 +1,4 @@
-#include "simple_pipeline_unit.h"
+#include "pipeline_unit.h"
 #include "latency_log.h"
 
 namespace pipeline_simulator {

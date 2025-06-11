@@ -1,8 +1,8 @@
 #include <iostream>
 #include <memory>
-#include "simple_pipeline.h"
-#include "simple_cache/cache.h"
-#include "simple_pipeline_unit.h"
+#include "pipeline.h"
+#include "cache/cache.h"
+#include "pipeline_unit.h"
 #include "stall_policy.h"
 
 namespace pipeline_simulator {

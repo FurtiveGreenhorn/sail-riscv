@@ -1,8 +1,8 @@
 #pragma once
 
-#include "simple_cache/cache.h"
-#include "simple_cache/replacement_policy/Tree-PLRU.h"
-#include "simple_pipeline_unit.h"
+#include "cache/cache.h"
+#include "cache/replacement_policy/Tree-PLRU.h"
+#include "pipeline_unit.h"
 #include <memory>
 
 namespace pipeline_simulator {

@@ -274,17 +274,18 @@ EMULATOR_OBJS := $(patsubst c_emulator/%.c, $(SAIL_OBJS_DIR)/emulator_%.o, $(wil
 $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o: generated_definitions/c/riscv_model_$(ARCH).c | $(SAIL_OBJS_DIR)
 	$(CC) -g $(C_FLAGS) -c $< -o $@
 
-# 產生效能模型接口庫
+# 產生效能模型庫 (包含所有程式碼)
 PERF_DIR = c_emulator/Perf
-PERF_LIBDIR = $(PERF_DIR)/build
-PERF_LIBS = $(PERF_LIBDIR)/perf_model.a
+PERF_LIB = $(PERF_DIR)/build/model_interface/perf_model.a
 
-$(PERF_LIBS): $(shell find $(PERF_DIR)/model_interface -type f) $(shell find $(PERF_DIR)/src -type f)
+$(PERF_LIB): $(shell find $(PERF_DIR)/model_interface -type f) $(shell find $(PERF_DIR)/src -type f)
 	cd $(PERF_DIR) && mkdir -p build
 	cd $(PERF_DIR)/build && cmake .. -DCMAKE_BUILD_TYPE=Release
 	$(MAKE) -C $(PERF_DIR)/build perf_model
 
-c_emulator/riscv_sim_$(ARCH): $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o $(PERF_LIBS) $(SAIL_OBJS) $(EMULATOR_OBJS) $(SOFTFLOAT_LIBS)
+c_emulator/riscv_sim_$(ARCH): $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o $(PERF_LIB) $(SAIL_OBJS) $(EMULATOR_OBJS) $(SOFTFLOAT_LIBS)
+	@echo "確認效能庫存在: $(PERF_LIB)"
+	@test -f $(PERF_LIB) || (echo "錯誤: 找不到效能庫 $(PERF_LIB)"; exit 1)
 	g++ -g $^ $(C_LIBS_WRAPPED) -o $@
 
 # c_emulator/riscv_sim_$(ARCH): generated_definitions/c/riscv_model_$(ARCH).c $(C_INCS) $(C_SRCS) $(SOFTFLOAT_LIBS) Makefile

@@ -24,11 +24,11 @@ endif()
 set(SAIL_LIB_DIR "${SAIL_DIR}/lib")
 include_directories(${SAIL_LIB_DIR})
 
-# 添加src子目錄
-add_subdirectory(src)
+# 添加model_interface子目錄（包含所有程式碼）
+add_subdirectory(model_interface)
 
-# 安裝目標
-install(TARGETS perflib
+# 安裝目標（僅安裝perf_model）
+install(TARGETS perf_model
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
 )
