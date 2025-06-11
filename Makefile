@@ -464,3 +464,4 @@ clean:
 	-rm -f sail_doc/riscv_RV32.json
 	-rm -f sail_doc/riscv_RV64.json
 	-rm -rf c_emulator/build
+	-rm -rf c_emulator/Perf/build
