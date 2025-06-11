@@ -279,8 +279,10 @@ PERF_DIR = c_emulator/Perf
 PERF_LIBDIR = $(PERF_DIR)/build
 PERF_LIBS = $(PERF_LIBDIR)/perflib.a
 
-$(PERF_LIBS):
-	$(MAKE) -C $(PERF_DIR)
+$(PERF_LIBS): $(shell find $(PERF_DIR)/src -type f)
+	mkdir -p $(PERF_DIR)/build
+	cd $(PERF_DIR)/build && cmake ..
+	$(MAKE) -C $(PERF_DIR)/build
 
 c_emulator/riscv_sim_$(ARCH): $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o $(PERF_LIBS) $(SAIL_OBJS) $(EMULATOR_OBJS) $(SOFTFLOAT_LIBS)
 	g++ -g $^ $(C_LIBS_WRAPPED) -o $@

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 預設測試檔案
-DEFAULT_TEST="rv64im-test/polyim_output/gemm"
+DEFAULT_TEST="testbench/polybench/trmm"
 
 # 如果有提供參數，使用參數作為測試檔案；否則使用預設檔案
 TEST_FILE=${1:-$DEFAULT_TEST}
