@@ -1,9 +1,21 @@
-// 此頭文件的目的:
-// 1.只提供 sail model 需要使用的函式
-// 2.轉換(參數類型、回傳值)成sail可接受的定義格式
-
 #pragma once
-#include "sail.h"
+
+// 確保 gmp.h 在 sail.h 之前被包含，因為 sail.h 依賴 mpz_t。
+// gmp.h 是一個 C 語言頭文件，它自己會處理 C/C++ 的兼容性 (internally extern "C" guarded)。
+// 所以它不需要被放在 extern "C" 區塊內。
+#include <gmp.h> // <--- 確保這一行在這裡，位於任何 extern "C" 之前，和 sail.h 之前
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// 將 sail.h 放在 extern "C" 區塊內，以確保 C++ 編譯器正確處理 C 風格的函式連結。
+#include "sail.h" // sail.h 需要 mpz_t，現在 gmp.h 已經包含進來了
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
