@@ -2,10 +2,8 @@
 #include <cstdint>
 #include <cassert>
 
-namespace pipeline_simulator {
-
 // Enum to represent different instruction types
-enum Instruction_type : unsigned {
+enum InstructionType : unsigned {
     // INST_unknown is used to represent instructions whose type has not yet been determined.
     // This can occur when parsing or decoding an instruction, and the type is unknown or invalid.
     INST_unknown,
@@ -88,7 +86,7 @@ using RegNum = unsigned;
 constexpr unsigned REGISTER_NOT_USED = static_cast<unsigned>(-1);
 struct Instruction {
     uint64_t addr, ls_addr/*for load or store*/;
-    Instruction_type type;
+    InstructionType type;
     RegNum rs1, rs2, rd;
     bool taken, is_used;
     uint64_t rs1_val, rs2_val;
@@ -144,7 +142,7 @@ struct Instruction {
         rd = new_rd;
     }   
 
-    void set_type(Instruction_type new_type) {
+    void set_type(InstructionType new_type) {
         type = new_type;
     }
 
@@ -233,5 +231,3 @@ ExecutionUnitType Instruction::get_execution_unit_type() {
         break;
     }
 }
-
-} // namespace pipeline_simulator

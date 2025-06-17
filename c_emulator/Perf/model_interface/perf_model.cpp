@@ -1,7 +1,6 @@
 #include "perf_model.h"
 // #include "../src/pipeline/pipeline.h"
-#include "../src/Instruction/instruction.h"
-using namespace pipeline_simulator;
+#include "../src/Instruction/Instruction.h"
 
 // static SimplePipeline simplePipeline;
 // static Instruction *stageInfoInstruction;
@@ -75,7 +74,7 @@ unit read_UJtype_regs(mach_bits rd) {
     return UNIT;
 }
 unit read_type(const int type) {
-    // stageInfoInstruction->set_type(Instruction_type(type));
+    // stageInfoInstruction->set_type(InstructionType(type));
     return UNIT;
 }
 

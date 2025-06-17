@@ -1,5 +1,5 @@
 // instruction types
-enum instruction_type = {
+enum InstructionType = {
     // INST_unknown is used to represent instructions whose type has not yet been determined.
     // This can occur when parsing or decoding an instruction, and the type is unknown or invalid.
     INST_unknown,
@@ -85,5 +85,5 @@ overload read_Itype_regs = {read_Itype_regs_, read_Itype_xRs1, read_Itype_xRs1xR
 val read_SBtype_regs = pure {c: "read_SBtype_regs"} : (bits(5), bits(5)) -> unit
 val read_UJtype_regs = pure {c: "read_UJtype_regs"} : (bits(5)) -> unit
 
-val read_type = pure {c: "read_type"} : instruction_type -> unit
+val read_type = pure {c: "read_type"} : InstructionType -> unit
 val read_taken = pure {c: "read_taken"} : bool -> unit

@@ -1,17 +1,15 @@
 #pragma once
 #include <array>
-#include "instruction.h"
+#include "Instruction.h"
 #include <cassert>
 #include <iostream>
-
-namespace pipeline_simulator {
 
 #define INST_POOL_SIZE 10
 
 template<auto size>
-class Instruction_pool {
+class InstructionPool {
 public:
-    Instruction_pool() : start(0), end(0) {
+    InstructionPool() : start(0), end(0) {
         bubble.set_bubble();
     }
     Instruction *newInst() {
@@ -43,5 +41,3 @@ private:
     std::size_t start, end;
     bool debug_logged = false;
 };
-
-} // namespace performance

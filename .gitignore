@@ -12,3 +12,4 @@ testbench/polybench_results/
 testbench/results_summary/
 testbench/results_detail/
 c_emulator/riscv_sim_RV64
+c_emulator/Perf/build
