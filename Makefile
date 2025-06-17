@@ -240,7 +240,7 @@ cloc:
 gcovr:
 	gcovr -r . --html --html-detail -o index.html
 
-generated_definitions/c/riscv_model_$(ARCH).c: $(SAIL_SRCS) model/main.sail Makefile
+generated_definitions/c/riscv_model_$(ARCH).c: $(SAIL_SRCS) model/main.sail # Makefile
 	mkdir -p generated_definitions/c
 	$(SAIL) $(SAIL_FLAGS) -O -Oconstant_fold -memo_z3 -c -c_include riscv_prelude.h -c_include riscv_platform.h -c_include Perf/model_interface/perf_model.h -c_no_main $(SAIL_SRCS) model/main.sail -o $(basename $@)
 
@@ -280,9 +280,9 @@ PERF_LIBDIR = $(PERF_DIR)/build
 PERF_LIBS = $(PERF_LIBDIR)/perf_model.a
 
 $(PERF_LIBS): $(shell find $(PERF_DIR)/model_interface -type f) $(shell find $(PERF_DIR)/src -type f)
-	cd $(PERF_DIR) && mkdir -p build
-	cd $(PERF_DIR)/build && cmake .. -DCMAKE_BUILD_TYPE=Release
-	$(MAKE) -C $(PERF_DIR)/build perf_model
+	@echo "Configuring and building perf_model..."
+	cd $(PERF_DIR) && ./build-scripts/configure.sh
+	cd $(PERF_DIR) && ./build-scripts/build.sh -j8
 
 c_emulator/riscv_sim_$(ARCH): $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o $(PERF_LIBS) $(SAIL_OBJS) $(EMULATOR_OBJS) $(SOFTFLOAT_LIBS)
 	g++ -g $^ $(C_LIBS_WRAPPED) -o $@
