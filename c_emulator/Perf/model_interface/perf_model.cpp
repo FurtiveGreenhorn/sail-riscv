@@ -1,12 +1,14 @@
 #include "perf_model.h"
-#include "../src/pipeline/pipeline.h"
-#include "../src/Instruction/instruction.h"
+#include "pipeline/pipeline.h"
+#include "Instruction/instruction.h"
+#include "speculation/functional.h"
 #include "sail.h"
 
 using namespace pipeline_simulator;
 
-static SimplePipeline simplePipeline;
-static Instruction *stageInfoInstruction;
+static inline SimplePipeline simplePipeline;
+static inline Instruction *stageInfoInstruction;
+static inline Speculation speculation;
 
 unit createInstrForStageInfo() {
     stageInfoInstruction = simplePipeline.create_inst();
@@ -105,4 +107,20 @@ unit read_type(const int type) {
 unit read_taken(bool taken) {
     stageInfoInstruction->set_taken(taken);
     return UNIT;
+}
+
+uint64_t spec_reg_read(mach_bits num) {
+    speculation.read(num);
+}
+
+uint64_t spec_reg_write(mach_bits num, uint64_t val) {
+    speculation.write(num, val);
+}
+
+uint64_t spec_is_reg_used(mach_bits num) {
+    speculation.is_used(num);
+}
+
+bool is_in_speculation_mode() {
+    speculation.is_in_speculation_mode();
 }

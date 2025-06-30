@@ -37,6 +37,12 @@ unit read_taken(bool taken);
 // unit read_rs1(mach_bits rs1);
 // unit read_rd(mach_bits rd);
 
+// speculation related functions
+bool is_in_speculation_mode();
+uint64_t spec_reg_read(mach_bits num);
+uint64_t spec_reg_write(mach_bits num, uint64_t val);
+uint64_t spec_reg_is_used(mach_bits num);
+
 #ifdef __cplusplus
 }
 #endif

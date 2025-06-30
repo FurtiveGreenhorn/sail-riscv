@@ -162,8 +162,8 @@ GMP_FLAGS = $(shell pkg-config --cflags gmp)
 GMP_LIBS = $(shell pkg-config --libs gmp || echo -lgmp)
 
 # TODO: Remove Zlib when upgrading to Sail 0.19; it is no longer a requirement.
-ZLIB_FLAGS = $(shell pkg-config --cflags zlib)
-ZLIB_LIBS = $(shell pkg-config --libs zlib)
+# ZLIB_FLAGS = $(shell pkg-config --cflags zlib)
+# ZLIB_LIBS = $(shell pkg-config --libs zlib)
 
 C_FLAGS = -I $(SAIL_LIB_DIR) -I c_emulator $(GMP_FLAGS) $(ZLIB_FLAGS) $(SOFTFLOAT_FLAGS)
 C_LIBS  = $(GMP_LIBS) $(ZLIB_LIBS) $(SOFTFLOAT_LIBS)

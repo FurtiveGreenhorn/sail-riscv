@@ -4,6 +4,7 @@
 
 _build/
 _sbuild/
+c_emulator/Perf/build/
 *.o
 *.a
 /z3_problems
