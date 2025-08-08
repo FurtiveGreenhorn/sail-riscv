@@ -28,6 +28,11 @@ unit show_cache_info() {
     return UNIT;
 }
 
+unit show_branch_pred_info() {
+    simplePipeline.show_branch_pred_info();
+    return UNIT;
+}
+
 unit read_addr(uint64_t addr) {
     stageInfoInstruction->set_addr(addr);
     return UNIT;
@@ -104,5 +109,10 @@ unit read_type(const int type) {
 
 unit read_taken(bool taken) {
     stageInfoInstruction->set_taken(taken);
+    return UNIT;
+}
+
+unit read_target_addr(uint64_t target_addr) {
+    stageInfoInstruction->set_target_addr(target_addr);
     return UNIT;
 }

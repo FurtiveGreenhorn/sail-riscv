@@ -4,21 +4,24 @@
 #include "cache/cache.h"
 #include "pipeline_unit.h"
 #include "stall_policy.h"
+#include"flush_policy.h"
 
 namespace pipeline_simulator {
 
 SimplePipeline::SimplePipeline() :
     // hazard_detection_unit
     hazard_dectection_unit(&pc_reg, &if_id_reg, &id_ex_reg),
+    // branch_predictor
+    branch_predictor(std::make_unique<SkippedMispredFlushCycle>(&clock)),
     // cache
     icache(0, std::make_unique<SkippedStallCycle>(&clock)),
     dcache(0, std::make_unique<SkippedStallCycle>(&clock)),
     l2cache(4),
     memory(10),
     // pipeline stage
-    fetch(&icache),
+    fetch(&icache, &branch_predictor),
     decode(&hazard_dectection_unit),
-    execute(&hazard_dectection_unit, std::make_shared<SkippedStallCycle>(&clock)),
+    execute(&hazard_dectection_unit, &branch_predictor, std::make_shared<SkippedStallCycle>(&clock)),
     mem(&dcache),
     // pipeline reg
     pc_reg(clock, nullptr, &fetch),

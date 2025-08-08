@@ -87,7 +87,7 @@ enum class ExecutionUnitType {
 using RegNum = unsigned;
 constexpr unsigned REGISTER_NOT_USED = static_cast<unsigned>(-1);
 struct Instruction {
-    uint64_t addr, ls_addr/*for load or store*/;
+    uint64_t addr, ls_addr/*for load or store*/, target_addr/*for branch target*/;
     Instruction_type type;
     RegNum rs1, rs2, rd;
     bool taken, is_used;
@@ -150,6 +150,18 @@ struct Instruction {
 
     void set_taken(bool new_taken) {
         taken = new_taken;
+    }
+
+    bool branch_taken() const {
+        return taken;
+    }
+
+    void set_target_addr(uint64_t new_target_addr) {
+        target_addr = new_target_addr;
+    }
+
+    uint64_t get_target_addr() const {
+        return target_addr;
     }
 
     void set_bubble() {

@@ -2,6 +2,7 @@
 
 #include "cache/cache.h"
 #include "cache/replacement_policy/Tree-PLRU.h"
+#include "branch_pred/branch_pred.h"
 #include "pipeline_unit.h"
 #include <memory>
 
@@ -19,11 +20,15 @@ public:
     Instruction *create_inst();
     void show_performance() const;
     void show_cache_info() const;
+    void show_branch_pred_info() const {
+        branch_predictor.dump_info();
+    }
 
 private:
     Instruction_pool<INST_POOL_SIZE> inst_pool;
     Clock clock;
     HazardDetectionUnit hazard_dectection_unit;
+    BranchPredictor<> branch_predictor;
     IcacheT icache;
     DcacheT dcache;
     L2cacheT l2cache;

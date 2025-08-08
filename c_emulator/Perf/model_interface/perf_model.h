@@ -13,6 +13,7 @@ unit createInstrForStageInfo();
 unit sendInstToPipeline();
 unit show_performance();
 unit show_cache_info();
+unit show_branch_pred_info();
 
 unit read_addr(uint64_t addr);
 unit read_ls_addr(uint64_t addr);
@@ -32,6 +33,7 @@ unit read_SBtype_regs(mach_bits rs2, mach_bits rs1);
 unit read_UJtype_regs(mach_bits rd);
 
 unit read_taken(bool taken);
+unit read_target_addr(uint64_t target_addr);
 
 // unit read_rs(mach_bits rs1, mach_bits rs2);
 // unit read_rs1(mach_bits rs1);

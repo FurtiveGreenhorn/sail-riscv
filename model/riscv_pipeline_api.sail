@@ -71,6 +71,7 @@ val sendInstToPipeline = pure {c: "sendInstToPipeline"} : unit -> unit
 
 val show_performance = pure {c: "show_performance"} : unit -> unit
 val show_cache_info = pure {c: "show_cache_info"} : unit -> unit
+val show_branch_pred_info = pure {c: "show_branch_pred_info"} : unit -> unit
 
 val read_addr = pure {c: "read_addr"} : xlenbits -> unit
 val read_ls_addr = pure {c: "read_ls_addr"} : xlenbits -> unit
@@ -87,3 +88,4 @@ val read_UJtype_regs = pure {c: "read_UJtype_regs"} : (bits(5)) -> unit
 
 val read_type = pure {c: "read_type"} : instruction_type -> unit
 val read_taken = pure {c: "read_taken"} : bool -> unit
+val read_target_addr = pure {c: "read_target_addr"} : xlenbits -> unit

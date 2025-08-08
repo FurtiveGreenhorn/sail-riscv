@@ -2,10 +2,11 @@
 
 #include "../Instruction/instruction_pool.h"
 #include "../Instruction/instruction.h"
+#include "branch_pred/branch_pred.h"
 #include "latency_log.h"
 #include "execution_unit.h"
 #include "pipeline_unit_concept.h"
-#include "cache/cache.h"  // 路徑已更新，無需修改
+#include "cache/cache.h"
 #include "stall_policy.h"
 #include <memory>
 
@@ -40,17 +41,20 @@ private:
 
 class Fetch : public SimplePipelineStageLogicMixIn<Fetch> {
 public:
-    Fetch(CacheConcept *ic) : 
-        icache(ic){
+    Fetch(CacheConcept *ic, BranchPredictor<> *bp) : 
+        icache(ic), branch_predictor(bp) {
         name = "Fetch";
     }
     void process_stage() {
         icache->access(data->addr);
+        if (data->is_branch())
+            branch_predictor->predict(data->addr);
         if (debug_logged)
             std::cout << "fetch addr: " << data->addr << std::endl;
     }
 private:
     CacheConcept *icache;
+    BranchPredictor<> *branch_predictor;
 };
 class Decode : public SimplePipelineStageLogicMixIn<Decode> {
 public:
@@ -78,9 +82,10 @@ private:
 
 class Execute: public SimplePipelineStageLogicMixIn<Execute> {
 public:
-    Execute(HazardDetectionUnit *hdu, 
+    Execute(HazardDetectionUnit *hdu, BranchPredictor<> *bp,
             std::shared_ptr<SkippedStallCycle> stall_policy) : 
                 hazard_detection_unit(hdu),
+                branch_predictor(bp),
                 stall_policy(stall_policy), 
                 int_alu(stall_policy), 
                 mul_unit(stall_policy), 
@@ -94,6 +99,7 @@ public:
 
 private:
     HazardDetectionUnit *hazard_detection_unit;
+    BranchPredictor<> *branch_predictor;
     std::shared_ptr<SkippedStallCycle> stall_policy;
     IntegerALU int_alu;
     MultiplierUnit mul_unit;

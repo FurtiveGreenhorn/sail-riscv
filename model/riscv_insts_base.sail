@@ -147,10 +147,11 @@ function clause execute (BTYPE(imm, rs2, rs1, op)) = {
     RISCV_BLTU => rs1_val <_u rs2_val,
     RISCV_BGEU => rs1_val >=_u rs2_val
   };
+  let t : xlenbits = PC + sign_extend(imm);
   // for pipeline
   read_taken(taken);
+  read_target_addr(t);
   // for pipeline
-  let t : xlenbits = PC + sign_extend(imm);
   if taken then {
     /* Extensions get the first checks on the prospective target address. */
     match ext_control_check_pc(t) {
