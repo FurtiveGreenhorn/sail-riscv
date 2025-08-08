@@ -25,7 +25,6 @@ void Execute::process_stage() {
     }
     if (data->is_branch()) {
         // Branch prediction
-        branch_predictor->predict(data->addr);
         if (data->branch_taken()) {
             branch_predictor->update_and_verify(
                 data->addr, true, data->get_target_addr());
