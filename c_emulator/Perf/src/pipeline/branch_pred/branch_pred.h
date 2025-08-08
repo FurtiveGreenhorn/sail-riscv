@@ -104,6 +104,7 @@ public:
 
         if (mispredicted && flush_policy) {
             flush_policy->flush();
+            latency_info.update(2);
         }
     }
 
@@ -112,8 +113,14 @@ public:
         info.dump();
     }
 
+    const LatencyInfo& get_latency_info() const {
+        return latency_info;
+    }
+
+
 private:
     std::unique_ptr<SkippedMispredFlushCycle> flush_policy;
+    LatencyInfo latency_info;
     BranchPredInfo info;
     BTBType btb;
     BHT<PCType> bht;

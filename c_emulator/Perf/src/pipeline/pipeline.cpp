@@ -90,6 +90,13 @@ void SimplePipeline::show_performance() const {
               << load_use_hazard_latency
               << std::endl;
 
+    auto branch_predictor_latency =
+        branch_predictor.get_latency_info().get_total_latency();
+
+    std::cout << "Latency by Branch Predictor: "
+              << branch_predictor_latency
+              << std::endl;
+
     std::cout << std::setprecision(4) << std::fixed;
 
     std::cout << "CPI: "
@@ -106,6 +113,14 @@ void SimplePipeline::show_performance() const {
 
     std::cout << "Divider Unit Latency in Total Cycles: "
               << 100.0 * div_unit_latency / cycle_count
+              << '%' << std::endl;
+
+    std::cout << "Load-Use Hazard Latency in Total Cycles: "
+              << 100.0 * load_use_hazard_latency / cycle_count
+              << '%' << std::endl;
+
+    std::cout << "Branch Predictor Latency in Total Cycles: "
+              << 100.0 * branch_predictor_latency / cycle_count
               << '%' << std::endl;
 }
 
