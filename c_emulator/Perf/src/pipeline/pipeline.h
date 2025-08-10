@@ -22,6 +22,8 @@ public:
     void show_cache_info() const;
     void show_branch_pred_info() const {
         branch_predictor.dump_info();
+        branch_predictor.dump_latency_split_by_bht();
+        branch_predictor.dump_latency_bht_taken_breakdown_by_btb();
     }
 
 private:

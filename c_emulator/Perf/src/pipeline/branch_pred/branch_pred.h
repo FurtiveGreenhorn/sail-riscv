@@ -223,6 +223,100 @@ public:
         std::cout << "==========================================================\n";
     }
 
+    void dump_latency_split_by_bht() const {
+        const unsigned per_flush_cycles = 2;
+
+        // BHT 猜 taken（pred_taken）
+        const unsigned bht_taken_flushes =
+            info.taken_info.btb_hit_info.incorrect_direction +                 // BTB hit & actual not-taken
+            info.taken_info.btb_hit_info.actual_taken_info.incorrect_target +  // BTB hit & wrong target
+            info.taken_info.btb_miss_info.actual_taken_info.btb_miss_taken;    // BTB miss & actual taken
+        const unsigned long long bht_taken_cycles = 1ULL * bht_taken_flushes * per_flush_cycles;
+
+        // BHT 猜 not-taken（pred_not_taken）
+        const unsigned bht_not_taken_flushes = info.not_taken_info.incorrect_direction; // pred_not_taken & actual_taken
+        const unsigned long long bht_not_taken_cycles = 1ULL * bht_not_taken_flushes * per_flush_cycles;
+
+        const unsigned total_flushes = bht_taken_flushes + bht_not_taken_flushes;
+        const unsigned long long total_cycles = bht_taken_cycles + bht_not_taken_cycles;
+
+        auto pct = [](unsigned long long part, unsigned long long whole){
+            return whole ? (100.0 * static_cast<long double>(part) / static_cast<long double>(whole)) : 0.0L;
+        };
+
+        std::cout << "\n=== Branch Miss Penalty by BHT Direction ===\n";
+        std::cout << "BHT pred_taken : flushes " << bht_taken_flushes
+                << " -> cycles " << bht_taken_cycles << "\n";
+        std::cout << "BHT pred_not   : flushes " << bht_not_taken_flushes
+                << " -> cycles " << bht_not_taken_cycles << "\n";
+        std::cout << "TOTAL          : flushes " << total_flushes
+                << " -> cycles " << total_cycles << "\n";
+        std::cout << std::fixed << std::setprecision(2)
+                << "Share          : pred_taken " << pct(bht_taken_cycles, total_cycles)
+                << "%, pred_not " << pct(bht_not_taken_cycles, total_cycles) << "%\n";
+
+        // 註記：方向錯但無延遲（pred_taken & BTB miss & actual not-taken）
+        std::cout << "Dir-wrong/no-flush: "
+                << info.taken_info.btb_miss_info.incorrect_direction_but_correct
+                << " (pred_taken & BTB miss & actual not-taken)\n";
+    }
+
+    void dump_latency_bht_taken_breakdown_by_btb() const {
+        const unsigned per_flush_cycles = 2;
+
+        // 細分BTB Hit的兩種錯誤類型
+        const unsigned btb_hit_direction_flushes = 
+            info.taken_info.btb_hit_info.incorrect_direction;  // 方向錯誤
+        const unsigned btb_hit_target_flushes = 
+            info.taken_info.btb_hit_info.actual_taken_info.incorrect_target;  // 目標地址錯誤
+        
+        const unsigned long long btb_hit_direction_cycles = 
+            1ULL * btb_hit_direction_flushes * per_flush_cycles;
+        const unsigned long long btb_hit_target_cycles = 
+            1ULL * btb_hit_target_flushes * per_flush_cycles;
+        
+        const unsigned btb_hit_flushes = 
+            btb_hit_direction_flushes + btb_hit_target_flushes;
+        const unsigned long long btb_hit_cycles = 
+            btb_hit_direction_cycles + btb_hit_target_cycles;
+
+        const unsigned btb_miss_flushes =
+            info.taken_info.btb_miss_info.actual_taken_info.btb_miss_taken;    // miss & actual taken
+        const unsigned long long btb_miss_cycles = 
+            1ULL * btb_miss_flushes * per_flush_cycles;
+
+        const unsigned bht_taken_flushes = 
+            btb_hit_flushes + btb_miss_flushes;
+        const unsigned long long bht_taken_cycles = 
+            btb_hit_cycles + btb_miss_cycles;
+
+        auto pct = [](unsigned long long part, unsigned long long whole){
+            return whole ? (100.0 * static_cast<long double>(part) / static_cast<long double>(whole)) : 0.0L;
+        };
+
+        std::cout << "\n=== Within BHT pred_taken: Detailed BTB Breakdown ===\n";
+        // BTB Hit細分
+        std::cout << "BTB hit (direction error): flushes " << btb_hit_direction_flushes
+                << " -> cycles " << btb_hit_direction_cycles << "\n";
+        std::cout << "BTB hit (target error)   : flushes " << btb_hit_target_flushes
+                << " -> cycles " << btb_hit_target_cycles << "\n";
+        std::cout << "BTB hit (total)          : flushes " << btb_hit_flushes
+                << " -> cycles " << btb_hit_cycles << "\n";
+        
+        // BTB Miss
+        std::cout << "BTB miss (actual taken)  : flushes " << btb_miss_flushes
+                << " -> cycles " << btb_miss_cycles << "\n";
+        
+        // 匯總信息
+        std::cout << "Subtotal                 : flushes " << bht_taken_flushes
+                << " -> cycles " << bht_taken_cycles << "\n";
+        std::cout << std::fixed << std::setprecision(2)
+                << "BTB hit share: " << pct(btb_hit_cycles, bht_taken_cycles) << "%"
+                << " (direction: " << pct(btb_hit_direction_cycles, bht_taken_cycles) << "%, "
+                << "target: " << pct(btb_hit_target_cycles, bht_taken_cycles) << "%)\n";
+        std::cout << "BTB miss share: " << pct(btb_miss_cycles, bht_taken_cycles) << "%\n";
+    }
+
     const LatencyInfo& get_latency_info() const {
         return latency_info;
     }
