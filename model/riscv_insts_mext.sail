@@ -29,14 +29,14 @@ mapping clause encdec = MUL(rs2, rs1, rd, mul_op)                    if extensio
 
 function clause execute (MUL(rs2, rs1, rd, mul_op)) = {
   // for pipeline
-  read_Rtype_regs(rs2, rs1, rd);
-  match mul_op {
-    struct { high = false, signed_rs1 = true,  signed_rs2 = true  } => read_type(INST_mul),
-    struct { high = true,  signed_rs1 = true,  signed_rs2 = true  } => read_type(INST_mulh),
-    struct { high = true,  signed_rs1 = true,  signed_rs2 = false } => read_type(INST_mulhsu),
-    struct { high = true,  signed_rs1 = false, signed_rs2 = false } => read_type(INST_mulhu),
-    _                                                               => ()
-  };
+  //read_(rs2, rs1, rd);
+  // match mul_op {
+  //   struct { high = false, signed_rs1 = true,  signed_rs2 = true  } => //read_type(INST_mul),
+  //   struct { high = true,  signed_rs1 = true,  signed_rs2 = true  } => //read_type(INST_mulh),
+  //   struct { high = true,  signed_rs1 = true,  signed_rs2 = false } => //read_type(INST_mulhsu),
+  //   struct { high = true,  signed_rs1 = false, signed_rs2 = false } => //read_type(INST_mulhu),
+  //   _                                                               => ()
+  // };
   // for pipeline
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
@@ -68,16 +68,16 @@ mapping clause encdec = DIV(rs2, rs1, rd, s)                           if extens
 
 function clause execute (DIV(rs2, rs1, rd, s)) = {
   // for pipeline
-  read_Rtype_regs(rs2, rs1, rd);
-  match s {
-    false => read_type(INST_divu),
-    true  => read_type(INST_div)
-  };
+  //read_(rs2, rs1, rd);
+  // match s {
+  //   false => //read_type(INST_divu),
+  //   true  => //read_type(INST_div)
+  // };
   // for pipeline
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
   // for pipeline
-  read_rs_val(rs1_val, rs2_val);
+  //read_(rs1_val, rs2_val);
   // for pipeline
   let rs1_int : int = if s then signed(rs1_val) else unsigned(rs1_val);
   let rs2_int : int = if s then signed(rs2_val) else unsigned(rs2_val);
@@ -104,16 +104,16 @@ mapping clause encdec = REM(rs2, rs1, rd, s)                           if extens
 
 function clause execute (REM(rs2, rs1, rd, s)) = {
   // for pipeline
-  read_Rtype_regs(rs2, rs1, rd);
-  match s {
-    false => read_type(INST_remu),
-    true  => read_type(INST_rem)
-  };
+  //read_(rs2, rs1, rd);
+  // match s {
+  //   false => //read_type(INST_remu),
+  //   true  => //read_type(INST_rem)
+  // };
   // for pipeline
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
   // for pipeline
-  read_rs_val(rs1_val, rs2_val);
+  //read_(rs1_val, rs2_val);
   // for pipeline
   let rs1_int : int = if s then signed(rs1_val) else unsigned(rs1_val);
   let rs2_int : int = if s then signed(rs2_val) else unsigned(rs2_val);
@@ -136,8 +136,8 @@ mapping clause encdec = MULW(rs2, rs1, rd)
 
 function clause execute (MULW(rs2, rs1, rd)) = {
   // for pipeline
-  read_Rtype_regs(rs2, rs1, rd);
-  read_type(INST_mulw);
+  //read_(rs2, rs1, rd);
+  //read_type(INST_mulw);
   // for pipeline
   let rs1_val = X(rs1)[31..0];
   let rs2_val = X(rs2)[31..0];
@@ -165,18 +165,18 @@ mapping clause encdec = DIVW(rs2, rs1, rd, s)
 
 function clause execute (DIVW(rs2, rs1, rd, s)) = {
   // for pipeline
-  read_Rtype_regs(rs2, rs1, rd);
-  match s {
-    false => read_type(INST_divuw),
-    true  => read_type(INST_divw)
-  };
+  //read_(rs2, rs1, rd);
+  // match s {
+  //   false => //read_type(INST_divuw),
+  //   true  => //read_type(INST_divw)
+  // };
   // for pipeline
   let rs1_val = X(rs1)[31..0];
   let rs2_val = X(rs2)[31..0];
   let rs1_int : int = if s then signed(rs1_val) else unsigned(rs1_val);
   let rs2_int : int = if s then signed(rs2_val) else unsigned(rs2_val);
   // for pipeline
-  read_rs_val(to_bits(64, rs1_int), to_bits(64, rs2_int));
+  //read_(to_bits(64, rs1_int), to_bits(64, rs2_int));
   // for pipeline
   let q : int = if rs2_int == 0 then -1 else quot_round_zero(rs1_int, rs2_int);
   /* check for signed overflow */
@@ -200,18 +200,18 @@ mapping clause encdec = REMW(rs2, rs1, rd, s)
 
 function clause execute (REMW(rs2, rs1, rd, s)) = {
   // for pipeline
-  read_Rtype_regs(rs2, rs1, rd);
-  match s {
-    false => read_type(INST_remuw),
-    true  => read_type(INST_remw)
-  };
+  //read_(rs2, rs1, rd);
+  // match s {
+  //   false => //read_type(INST_remuw),
+  //   true  => //read_type(INST_remw)
+  // };
   // for pipeline
   let rs1_val = X(rs1)[31..0];
   let rs2_val = X(rs2)[31..0];
   let rs1_int : int = if s then signed(rs1_val) else unsigned(rs1_val);
   let rs2_int : int = if s then signed(rs2_val) else unsigned(rs2_val);
   // for pipeline
-  read_rs_val(to_bits(64, rs1_int), to_bits(64, rs2_int));
+  //read_(to_bits(64, rs1_int), to_bits(64, rs2_int));
   // for pipeline
   let r : int = if rs2_int == 0 then rs1_int else rem_round_zero(rs1_int, rs2_int);
   /* signed overflow case returns zero naturally as required due to -1 divisor */

@@ -22,23 +22,23 @@ mapping clause encdec = CSR(csr, rs1, rd, is_imm, op)
 
 function clause execute CSR(csr, rs1, rd, is_imm, op) = {
   // for pipeline
-  read_Itype_regs(rs1, rd);
-  match is_imm {
-    true => {
-      match op {
-        CSRRW => read_type(INST_csrrwi),
-        CSRRS => read_type(INST_csrrsi),
-        CSRRC => read_type(INST_csrrci)
-      }
-    },
-    false => {
-      match op {
-        CSRRW => read_type(INST_csrrw),
-        CSRRS => read_type(INST_csrrs),
-        CSRRC => read_type(INST_csrrc)
-      }
-    }
-  };
+  //read_(rs1, rd);
+  // match is_imm {
+  //   true => {
+  //     match op {
+  //       CSRRW => //read_type(INST_csrrwi),
+  //       CSRRS => //read_type(INST_csrrsi),
+  //       CSRRC => //read_type(INST_csrrci)
+  //     }
+  //   },
+  //   false => {
+  //     match op {
+  //       CSRRW => //read_type(INST_csrrw),
+  //       CSRRS => //read_type(INST_csrrs),
+  //       CSRRC => //read_type(INST_csrrc)
+  //     }
+  //   }
+  // };
   // for pipeline
   let rs1_val : xlenbits = if is_imm then zero_extend(rs1) else X(rs1);
   let isWrite : bool = match op {

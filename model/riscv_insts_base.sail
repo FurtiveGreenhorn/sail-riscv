@@ -25,11 +25,11 @@ mapping clause encdec = UTYPE(imm, rd, op)
 
 function clause execute UTYPE(imm, rd, op) = {
   // for pipeline
-  read_UJtype_regs(rd);
-  match op {
-    RISCV_LUI   => read_type(INST_lui),
-    RISCV_AUIPC => read_type(INST_auipc)
-  };
+  // //read_Jtype_regs(rd);
+  // match op {
+  //   RISCV_LUI   => //read_type(INST_lui),
+  //   RISCV_AUIPC => //read_type(INST_auipc)
+  // };
   // for pipeline
   let off : xlenbits = sign_extend(imm @ 0x000);
   let ret : xlenbits = match op {
@@ -68,8 +68,8 @@ but this is difficult
 
 function clause execute (RISCV_JAL(imm, rd)) = {
   // for pipeline
-  read_UJtype_regs(rd);
-  read_type(INST_jal);
+  //read_Jtype_regs(rd);
+  //read_type(INST_jal);
   // for pipeline
   let t : xlenbits = PC + sign_extend(imm);
   /* Extensions get the first checks on the prospective target address. */
@@ -127,15 +127,15 @@ mapping clause encdec = BTYPE(imm7_6 @ imm5_0 @ imm7_5_0 @ imm5_4_1 @ 0b0, rs2, 
 
 function clause execute (BTYPE(imm, rs2, rs1, op)) = {
   // for pipeline
-  read_SBtype_regs(rs1, rs2);
-  match op {
-    RISCV_BEQ  => read_type(INST_beq),
-    RISCV_BNE  => read_type(INST_bne),
-    RISCV_BLT => read_type(INST_blt),
-    RISCV_BGE  => read_type(INST_bge),
-    RISCV_BLTU   => read_type(INST_bltu),
-    RISCV_BGEU  => read_type(INST_bgeu)
-  };
+  //read_(rs1, rs2);
+  // match op {
+  //   RISCV_BEQ  => //read_type(INST_beq),
+  //   RISCV_BNE  => //read_type(INST_bne),
+  //   RISCV_BLT => //read_type(INST_blt),
+  //   RISCV_BGE  => //read_type(INST_bge),
+  //   RISCV_BLTU   => //read_type(INST_bltu),
+  //   RISCV_BGEU  => //read_type(INST_bgeu)
+  // };
   // for pipeline
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
@@ -149,8 +149,8 @@ function clause execute (BTYPE(imm, rs2, rs1, op)) = {
   };
   let t : xlenbits = PC + sign_extend(imm);
   // for pipeline
-  read_taken(taken);
-  read_target_addr(t);
+  // //read_(taken);
+  // //read_(t);
   // for pipeline
   if taken then {
     /* Extensions get the first checks on the prospective target address. */
@@ -202,15 +202,15 @@ mapping clause encdec = ITYPE(imm, rs1, rd, op)
 
 function clause execute (ITYPE (imm, rs1, rd, op)) = {
   // for pipeline
-  read_Itype_regs(rs1, rd);
-  match op {
-    RISCV_ADDI  => read_type(INST_addi),
-    RISCV_SLTI  => read_type(INST_slti),
-    RISCV_SLTIU => read_type(INST_sltiu),
-    RISCV_ANDI  => read_type(INST_andi),
-    RISCV_ORI   => read_type(INST_ori),
-    RISCV_XORI  => read_type(INST_xori)
-  };
+  //read_(rs1, rd);
+  // match op {
+  //   RISCV_ADDI  => //read_type(INST_addi),
+  //   RISCV_SLTI  => //read_type(INST_slti),
+  //   RISCV_SLTIU => //read_type(INST_sltiu),
+  //   RISCV_ANDI  => //read_type(INST_andi),
+  //   RISCV_ORI   => //read_type(INST_ori),
+  //   RISCV_XORI  => //read_type(INST_xori)
+  // };
   // for pipeline
   let rs1_val = X(rs1);
   let immext : xlenbits = sign_extend(imm);
@@ -253,12 +253,12 @@ mapping clause encdec = SHIFTIOP(shamt, rs1, rd, RISCV_SRAI) <-> 0b010000 @ sham
 
 function clause execute (SHIFTIOP(shamt, rs1, rd, op)) = {
   // for pipeline
-  read_Itype_regs(rs1, rd);
-  match op {
-    RISCV_SLLI => read_type(INST_slli),
-    RISCV_SRLI => read_type(INST_srli),
-    RISCV_SRAI => read_type(INST_srai)
-  };
+  //read_(rs1, rd);
+  // match op {
+  //   RISCV_SLLI => //read_type(INST_slli),
+  //   RISCV_SRLI => //read_type(INST_srli),
+  //   RISCV_SRAI => //read_type(INST_srai)
+  // };
   // for pipeline  
   let rs1_val = X(rs1);
   /* the decoder guard should ensure that shamt[5] = 0 for RV32 */
@@ -302,19 +302,19 @@ mapping clause encdec = RTYPE(rs2, rs1, rd, RISCV_SRA)  <-> 0b0100000 @ rs2 @ rs
 
 function clause execute (RTYPE(rs2, rs1, rd, op)) = {
   // for pipeline
-  read_Rtype_regs(rs2, rs1, rd);
-  match op {
-    RISCV_ADD  => read_type(INST_add),
-    RISCV_SLT  => read_type(INST_slt),
-    RISCV_SLTU => read_type(INST_sltu),
-    RISCV_AND  => read_type(INST_and),
-    RISCV_OR   => read_type(INST_or),
-    RISCV_XOR  => read_type(INST_xor),
-    RISCV_SLL  => read_type(INST_sll),
-    RISCV_SRL  => read_type(INST_srl),
-    RISCV_SUB  => read_type(INST_sub),
-    RISCV_SRA  => read_type(INST_sra)
-  };
+  //read_(rs2, rs1, rd);
+  // match op {
+  //   RISCV_ADD  => //read_type(INST_add),
+  //   RISCV_SLT  => //read_type(INST_slt),
+  //   RISCV_SLTU => //read_type(INST_sltu),
+  //   RISCV_AND  => //read_type(INST_and),
+  //   RISCV_OR   => //read_type(INST_or),
+  //   RISCV_XOR  => //read_type(INST_xor),
+  //   RISCV_SLL  => //read_type(INST_sll),
+  //   RISCV_SRL  => //read_type(INST_srl),
+  //   RISCV_SUB  => //read_type(INST_sub),
+  //   RISCV_SRA  => //read_type(INST_sra)
+  // };
   // for pipeline
   let rs1_val = X(rs1);
   let rs2_val = X(rs2);
@@ -381,25 +381,25 @@ function check_misaligned(vaddr : virtaddr, width : word_width) -> bool =
 
 function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
   // for pipeline
-  read_Itype_regs(rs1, rd);
-  match is_unsigned {
-    true => {
-      match width {
-        BYTE   => read_type(INST_lbu),
-        HALF   => read_type(INST_lhu),
-        WORD   => read_type(INST_lwu),
-        DOUBLE => ()
-      }
-    },
-    false => {
-      match width {
-        BYTE   => read_type(INST_lb),
-        HALF   => read_type(INST_lh),
-        WORD   => read_type(INST_lw),
-        DOUBLE => read_type(INST_ld)
-      }
-    }
-  };
+  //read_(rs1, rd);
+  // match is_unsigned {
+  //   true => {
+  //     match width {
+  //       BYTE   => //read_type(INST_lbu),
+  //       HALF   => //read_type(INST_lhu),
+  //       WORD   => //read_type(INST_lwu),
+  //       DOUBLE => ()
+  //     }
+  //   },
+  //   false => {
+  //     match width {
+  //       BYTE   => //read_type(INST_lb),
+  //       HALF   => //read_type(INST_lh),
+  //       WORD   => //read_type(INST_lw),
+  //       DOUBLE => //read_type(INST_ld)
+  //     }
+  //   }
+  // };
   // for pipeline
   let offset : xlenbits = sign_extend(imm);
   let width_bytes = size_bytes(width);
@@ -420,7 +420,7 @@ function clause execute(LOAD(imm, rs1, rd, is_unsigned, width, aq, rl)) = {
 
           match mem_read(Read(Data), paddr, width_bytes, aq, rl, false) {
             MemValue(result) => {
-              read_ls_addr(physaddr_bits(paddr));
+              //read_(physaddr_bits(paddr));
               // dc_read(physaddr_bits(paddr));
               X(rd) = extend_value(is_unsigned, result); RETIRE_SUCCESS 
             },
@@ -462,13 +462,13 @@ mapping clause encdec = STORE(imm7 @ imm5, rs2, rs1, size, false, false)        
    This may need revisiting. */
 function clause execute (STORE(imm, rs2, rs1, width, aq, rl)) = {
   // for pipeline
-  read_SBtype_regs(rs1, rs2);
-  match width {
-    BYTE   => read_type(INST_sb),
-    HALF   => read_type(INST_sh),
-    WORD   => read_type(INST_sw),
-    DOUBLE => read_type(INST_sd)
-  };
+  //read_(rs1, rs2);
+  // match width {
+  //   BYTE   => //read_type(INST_sb),
+  //   HALF   => //read_type(INST_sh),
+  //   WORD   => //read_type(INST_sw),
+  //   DOUBLE => //read_type(INST_sd)
+  // };
   // for pipeline
   let offset : xlenbits = sign_extend(imm);
   let width_bytes = size_bytes(width);
@@ -487,7 +487,7 @@ function clause execute (STORE(imm, rs2, rs1, width, aq, rl)) = {
         TR_Failure(e, _)    => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
         TR_Address(paddr, _) => {
           // dc_write(physaddr_bits(paddr));
-          read_ls_addr(physaddr_bits(paddr));
+          //read_(physaddr_bits(paddr));
           let eares = mem_write_ea(paddr, width_bytes, aq, rl, false);
           match (eares) {
             MemException(e) => { handle_mem_exception(vaddr, e); RETIRE_FAIL },
@@ -518,8 +518,8 @@ mapping clause encdec = ADDIW(imm, rs1, rd)
 
 function clause execute (ADDIW(imm, rs1, rd)) = {
   // for pipeline
-  read_Itype_regs(rs1, rd);
-  read_type(INST_addiw);
+  //read_(rs1, rd);
+  //read_type(INST_addiw);
   // for pipeline
   let result : xlenbits = sign_extend(imm) + X(rs1);
   X(rd) = sign_extend(result[31..0]);
@@ -557,14 +557,14 @@ mapping clause encdec = RTYPEW(rs2, rs1, rd, RISCV_SRAW)
 
 function clause execute (RTYPEW(rs2, rs1, rd, op)) = {
   // for pipeline
-  read_Rtype_regs(rs2, rs1, rd);
-  match op {
-    RISCV_ADDW => read_type(INST_addw),
-    RISCV_SUBW => read_type(INST_subw),
-    RISCV_SLLW => read_type(INST_sllw),
-    RISCV_SRLW => read_type(INST_srlw),
-    RISCV_SRAW => read_type(INST_sraw)
-  };
+  //read_(rs2, rs1, rd);
+  // match op {
+  //   RISCV_ADDW => //read_type(INST_addw),
+  //   RISCV_SUBW => //read_type(INST_subw),
+  //   RISCV_SLLW => //read_type(INST_sllw),
+  //   RISCV_SRLW => //read_type(INST_srlw),
+  //   RISCV_SRAW => //read_type(INST_sraw)
+  // };
   // for pipeline
   let rs1_val = (X(rs1))[31..0];
   let rs2_val = (X(rs2))[31..0];
@@ -610,12 +610,12 @@ mapping clause encdec = SHIFTIWOP(shamt, rs1, rd, RISCV_SRAIW)
 
 function clause execute (SHIFTIWOP(shamt, rs1, rd, op)) = {
   // for pipeline
-  read_Itype_regs(rs1, rd);
-  match op {
-    RISCV_SLLIW => read_type(INST_slliw),
-    RISCV_SRLIW => read_type(INST_srliw),
-    RISCV_SRAIW => read_type(INST_sraiw)
-  };
+  //read_(rs1, rd);
+  // match op {
+  //   RISCV_SLLIW => //read_type(INST_slliw),
+  //   RISCV_SRLIW => //read_type(INST_srliw),
+  //   RISCV_SRAIW => //read_type(INST_sraiw)
+  // };
   // for pipeline  
   let rs1_val = (X(rs1))[31..0];
   let result : bits(32) = match op {
@@ -653,8 +653,8 @@ function effective_fence_set(set : bits(4), fiom : bool) -> bits(4) = {
 
 function clause execute (FENCE(pred, succ)) = {
   // for pipeline
-  read_Itype_regs();
-  read_type(INST_fence);
+  //read_();
+  //read_type(INST_fence);
   // for pipeline
   // If the FIOM bit in menvcfg/senvcfg is set then the I/O bits can imply R/W.
   let fiom = is_fiom_active();
@@ -716,8 +716,8 @@ mapping clause encdec = FENCE_TSO(pred, succ)
 
 function clause execute (FENCE_TSO(pred, succ)) = {
   // for pipeline
-  read_Itype_regs();
-  read_type(INST_fence);
+  //read_();
+  //read_type(INST_fence);
   // for pipeline
   match (pred, succ) {
     (_ : bits(2) @ 0b11, _ : bits(2) @ 0b11) => sail_barrier(Barrier_RISCV_tso),
@@ -740,8 +740,8 @@ mapping clause encdec = ECALL()
 
 function clause execute ECALL() = {
   // for pipeline
-  read_Itype_regs();
-  read_type(INST_ecall);
+  //read_();
+  //read_type(INST_ecall);
   // for pipeline
   let t : sync_exception =
     struct { trap = match (cur_privilege) {
@@ -765,7 +765,7 @@ mapping clause encdec = MRET()
 
 function clause execute MRET() = {
   // for pipeline
-  read_type(INST_mret);
+  //read_type(INST_mret);
   // for pipeline
   if   cur_privilege != Machine
   then { handle_illegal(); RETIRE_FAIL }
@@ -787,7 +787,7 @@ mapping clause encdec = SRET()
 
 function clause execute SRET() = {
   // for pipeline
-  read_type(INST_sret);
+  //read_type(INST_sret);
   // for pipeline
   let sret_illegal : bool = match cur_privilege {
     User       => true,
@@ -828,7 +828,7 @@ mapping clause encdec = WFI()
 
 function clause execute WFI() = {
   // for pipeline
-  read_type(INST_wfi);
+  //read_type(INST_wfi);
   // for pipeline
   match cur_privilege {
     Machine    => { platform_wfi(); RETIRE_SUCCESS },
@@ -848,7 +848,7 @@ mapping clause encdec = SFENCE_VMA(rs1, rs2)
 
 function clause execute SFENCE_VMA(rs1, rs2) = {
   // for pipeline
-  read_type(INST_sfence_vma);
+  //read_type(INST_sfence_vma);
   // for pipeline
   let addr : option(xlenbits) = if rs1 == 0b00000 then None() else Some(X(rs1));
   let asid : option(xlenbits) = if rs2 == 0b00000 then None() else Some(X(rs2));

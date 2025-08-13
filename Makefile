@@ -288,7 +288,7 @@ $(PERF_LIBS): $(shell find $(PERF_DIR)/model_interface -type f) $(shell find $(P
 	$(MAKE) -C $(PERF_DIR)/build perf_model
 
 c_emulator/riscv_sim_$(ARCH): $(SAIL_OBJS_DIR)/riscv_model_$(ARCH).o $(PERF_LIBS) $(SAIL_OBJS) $(EMULATOR_OBJS) $(SOFTFLOAT_LIBS)
-	g++ -g $^ $(C_LIBS_WRAPPED) -o $@
+	g++ -g $^ $(C_LIBS_WRAPPED) -lz -o $@
 
 # c_emulator/riscv_sim_$(ARCH): generated_definitions/c/riscv_model_$(ARCH).c $(C_INCS) $(C_SRCS) $(SOFTFLOAT_LIBS) Makefile
 # 	$(CC) -g $(C_WARNINGS) $(C_FLAGS) $< $(C_SRCS) $(SAIL_LIB_DIR)/*.c $(C_LIBS_WRAPPED) -o $@

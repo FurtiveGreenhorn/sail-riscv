@@ -31,7 +31,7 @@ function fetch() -> FetchResult =
            */
           // ic_read(physaddr_bits(ppclo));
           // for pipeline
-          read_addr(physaddr_bits(ppclo));
+          // //read_(physaddr_bits(ppclo));
           // for pipeline
           match mem_read(Execute(), ppclo, 2, false, false, false) {
             MemException(e) => F_Error(e, PC),
